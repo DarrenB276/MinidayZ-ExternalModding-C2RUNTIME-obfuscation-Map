@@ -1,11 +1,11 @@
 # 📖 MiniDayZ+ C2Runtime Obfuscation Map
-### By [@Civert0](https://t.me/Civert0) — MDZ Toolkit / c2injt.js Author
+### documented by [@Civert0](https://t.me/Civert0) — Author/Dev of MDZ ToolkitModMenu v31.0
 
 ---
 
 ## ⚠️ DISCLAIMER & LEGAL NOTICE
 
-> **I, Civert0, am NOT responsible for how you use this documentation.**
+> **I am NOT responsible for how you use this documentation.**
 >
 > This reference is published strictly for **educational, research, and modding purposes**. By reading and using this material, you accept full responsibility for anything you create with it. Do not use this to harm, exploit, or cheat against other players in any multiplayer context. Use at your own risk.
 >
@@ -38,12 +38,11 @@ This documentation exists so that **aspiring modders** can:
 |------|-------------|
 | `C2RUNTIME_OBFUSCATION_MAP_COMPLETE_ENG.txt` | Full obfuscation map — English |
 | `C2RUNTIME_OBFUSCATION_MAP_COMPLETE_RU.txt` | Full obfuscation map — Russian (Русский) |
-| `c2injt.js` | MDZ Toolkit mod menu source (obfuscated) — example of the map in action |
 | `README.md` | This file |
 
 ---
 
-## 🚀 Getting Started — How to Use This
+## Getting Started — How to Use This
 
 ### Entry Point
 Every external script mod starts here:
@@ -120,13 +119,13 @@ Scripts can be injected via:
 
 ---
 
-## 📬 Contact & Support
+## Contact & Support
 
 - **Telegram:** [t.me/Civert0](https://t.me/Civert0)
 - **Ko-fi:** [ko-fi.com/civert0](https://ko-fi.com/civert0)
 - **PayPal:** civertzero@gmail.com
 
-If this documentation helped your project, consider dropping a coffee. It took a significant amount of time to reverse engineer and document this. 😁
+If this documentation helped your project, consider dropping a coffee. 😁
 
 ---
 
@@ -134,7 +133,7 @@ If this documentation helped your project, consider dropping a coffee. It took a
 
 This documentation is shared freely for the MiniDayZ modding community. You may:
 - ✅ Use it to build your own mods and tools
-- ✅ Share it with credit to the original author (@Civert0)
+- ✅ Share it or idk :P
 - ✅ Translate it to other languages
 
 You may NOT:
@@ -144,4 +143,5 @@ You may NOT:
 
 ---
 
-*MiniDayZ and MiniDayZ+ are properties of their respective owners. This project is unofficial and not affiliated with the game's developers.*
+*MiniDayZ and MiniDayZ+ are properties of their respective owners. This project is unofficial and not affiliated with the game's developers. © 2016-2026 Bohemia Interactive a.s. Mini DAYZ® is a trademark of Bohemia Interactive a.s. All rights reserved*
+
