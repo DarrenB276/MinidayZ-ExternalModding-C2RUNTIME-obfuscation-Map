@@ -1,5 +1,5 @@
 # 📖 MiniDayZ+ C2Runtime Obfuscation Map
-### documented by [@Civert0](https://t.me/Civert0) — Author/Dev of MDZ ToolkitModMenu v31.0
+### by [@Civert0](https://t.me/Civert0) — Author/Dev of MDZ ToolkitModMenu v31.0
 
 ---
 
@@ -117,6 +117,9 @@ Scripts can be injected via:
 - **Browser (PC):** F12 developer console on the web version
 - **Root / ADB:** Direct WebView debugging
 
+Basically you can add custom GUI, custom behaviors, modify ingame behaviors/variables and events without you touching the data.js
+
+..expect bugs/glitches and errors might occur upon changing events and variables..
 ---
 
 ## Contact & Support
@@ -126,6 +129,10 @@ Scripts can be injected via:
 - **PayPal:** civertzero@gmail.com
 
 If this documentation helped your project, consider dropping a coffee. 😁
+
+for removal or feedback you may contact me at
+civertzero@gmail.com 
+or [My Telegram](https://t.me/Civert0)
 
 ---
 
