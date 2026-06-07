@@ -1,0 +1,1744 @@
+================================================================================
+
+  CONSTRUCT 2 RUNTIME — COMPLETE OBFUSCATION MAP (FULL OBFUSCATION MAP by Civert0)
+  Analysis and Comparison between 
+  Obfuscated (MiniDayZ+ v1.4 to 1.9.6) ↔ Unobfuscated (MiniDayZ 1.2)
+  
+  PURPOSE: Comprehensive reference for modding MiniDayZ+ 1.9.6 directly
+           using the obfuscated c2runtime.js without needing the
+           unobfuscated version. Every identifier is mapped.
+           A guide for modding MiniDayZ+ 1.9.6 and above
+           directly using obfuscated c2runtime.js without the need for the unobfuscated version. Every identifier is
+           mapped. and has description for you to understand 
+
+Note: I created this so players can make external and
+internal mods for minidayz/minidayz+ without further
+reverse engineering and runtime investigation. There will be no need to manually convert the obfuscated c2runtime.js
+using this document, as I've already done that—and it didn't
+work at all, with numerous errors and bugs. You might want to
+check line: 1696 in SECTION 35
+"var rt = window.cr_getC2Runtime();" — this is the entry point for
+modding :)
+ 
+================================================================================
+
+FILE REFERENCES:
+  Obfuscated:   c2runtime.js.txt          (~19,250 lines)
+  Unobfuscated: MDZ 1.9.6/www/c2runtime.js (~33,000 lines, patched from 1.2)
+
+################################################################################
+##                                                                            ##
+##  PART A — GLOBAL SCOPE                                                     ##
+##                                                                            ##
+################################################################################
+
+================================================================================
+SECTION 1: NAMESPACE
+================================================================================
+
+  oc = {}              →  cr = {}
+  oc.plugins_ (implicit) → cr.plugins_
+  oc.behaviors (implicit) → cr.behaviors
+
+================================================================================
+SECTION 2: ALL GLOBAL VARIABLES (line 3 declaration + mid-file vars)
+================================================================================
+
+--- 2A: Utility Functions ---
+
+  Obfuscated  →  Unobfuscated                 Description
+  ----------     --------------------------   ---------------------------------
+  fa          →  cr.logexport                 Console log wrapper
+  ga          →  cr.logerror                  Console error wrapper
+  ba          →  cr.seal / cr.freeze          No-op seal/freeze
+  ia          →  cr.is_undefined              typeof === "undefined"
+  ja          →  cr.is_number                 typeof === "number"
+  ka          →  cr.is_string                 typeof === "string"
+  la          →  cr.isPOT                     Power-of-two check
+  na          →  cr.nextHighestPowerOfTwo     Round to next power of 2
+  pa          →  cr.abs                       Math.abs (bitwise)
+  qa          →  cr.max                       Math.max of 2
+  ra          →  cr.min                       Math.min of 2
+  sa          →  cr.PI                        Math.PI constant
+  ua          →  cr.floor                     Math.floor (bitwise)
+  va          →  cr.ceil                      Math.ceil (bitwise)
+  xa          →  cr.segments_intersect        Line segment intersection test
+  Aa          →  cr.RGB                       RGB color from (r,g,b) ints
+  Ca          →  cr.GetRValue                 Extract red channel from RGB int
+  Da          →  cr.GetGValue                 Extract green channel
+  Ea          →  cr.GetBValue                 Extract blue channel
+  Fa          →  cr.shallowCopy               Copy all own properties
+  Ga          →  cr.arrayRemove               Remove element at index
+  Ha          →  cr.truncateArray             Set array.length
+  z           →  cr.clearArray                Set array.length = 0
+  Ia          →  cr.shallowAssignArray        Copy array elements 1:1
+  Ja          →  cr.appendArray               Append one array to another
+  Ka          →  cr.fastIndexOf               Find element index in array
+  La          →  cr.arrayFindRemove           Find and remove element
+  Ma          →  cr.clamp                     Clamp(val, min, max)
+  E           →  cr.to_radians                Degrees → radians
+  Na          →  cr.to_degrees                Radians → degrees
+  Oa          →  cr.clamp_angle_degrees       Clamp to 0–360°
+  Pa          →  cr.clamp_angle               Clamp to 0–2π
+  Qa          →  cr.to_clamped_degrees        Radians → clamped degrees
+  Sa          →  cr.to_clamped_radians        Degrees → clamped radians
+  Ta          →  cr.angleTo                   atan2(dy, dx) angle
+  Ua          →  cr.angleDiff                 Absolute angle difference
+  Va          →  cr.angleRotate               Rotate angle by step toward target
+  Wa          →  cr.angleClockwise            Check clockwise direction
+  Xa          →  cr.rotatePtAround            Rotate point around pivot
+  Ya          →  cr.distanceTo                Point-to-point distance
+  Za          →  cr.xor                       Logical XOR
+  $a          →  cr.lerp                      Linear interpolation
+  ab          →  cr.hasAnyOwnProperty         Check if object has any property
+  bb          →  cr.wipe                      Delete all object properties
+  cb          →  cr.performance_now           High-resolution timestamp
+  jb          →  cr.regexp_escape             Escape regex special chars
+  qb          →  cr.round6dp                  Round to 6 decimal places
+  rb          →  cr.equals_nocase             Case-insensitive string compare
+  sb          →  cr.hasOwnProperty            Safe hasOwnProperty wrapper
+
+--- 2B: Array Filtering Functions ---
+
+  db          →  cr.arrayRemoveAllFromObjectSet  Remove set items from array
+  eb          →  (filter using Set.has)          Fast path (Set-capable browsers)
+  fb          →  (filter using fastIndexOf)      Slow fallback path
+
+--- 2C: Class Constructors (assigned in IIFEs) ---
+
+  ya          →  cr.rect                       Rectangle (left, top, right, bottom)
+  za          →  cr.quad                       Quad (8 corners: tlx,tly,trx,try_,brx,bry,blx,bly)
+  da          →  cr.ObjectSet                  Hash set with Set/object fallback
+  ca          →  cr.GridCell                   Spatial grid cell
+  ea          →  cr.RenderCell                 Render cell with Z-sorting
+  ib          →  cr.KahanAdder                 Kahan summation algorithm class
+  kb          →  cr.CollisionPoly              Collision polygon class
+  lb          →  cr.SparseGrid                 Sparse grid (collision partitioning)
+  mb          →  cr.RenderGrid                 Render grid (layer Z-sorting)
+  tb          →  GLWrap                        WebGL wrapper class (line 2080)
+
+--- 2D: Blend/Rendering Functions ---
+
+  nb          →  cr.effectToCompositeOp        Effect index → canvas composite op
+  ob          →  cr.setGLBlend                 Set WebGL blend mode from ID
+
+--- 2E: Instance Methods (assigned dynamically to world instances) ---
+
+  Pb          →  cr.set_bbox_changed           Mark bounding box dirty + callbacks
+  Qb          →  cr.add_bbox_changed_callback  Register bbox change handler
+  Ub          →  cr.update_bbox                Recalculate bounding box from x/y/w/h/angle
+  Vb          →  cr.update_render_grid_pos     Update render grid cell position
+  Wb          →  cr.update_collision_grid_pos  Update collision grid cell position
+  Rb          →  cr.inst_contains_pt           Point-in-instance test (bbox + poly)
+  Lb          →  cr.inst_updateIID             Refresh instance IID
+  Xb          →  cr.inst_getZIndex             Get Z-index (refresh if stale)
+  Yb          →  cr.inst_updateActiveEffects   Rebuild active_effect_types array
+  Mb          →  cr.inst_toString              String representation "Inst{puid}"
+
+--- 2F: Type Methods (assigned dynamically to type objects) ---
+
+  wb          →  cr.type_updateIIDs            Recalculate instance IIDs
+  xb          →  cr.type_getFirstPicked        Get first picked instance
+  yb          →  cr.type_getPairedInstance      Get paired container instance
+  zb          →  cr.type_getCurrentSol         Get current SOL
+  Ab          →  cr.type_pushCleanSol          Push new empty SOL
+  Bb          →  cr.type_pushCopySol           Push copy of current SOL
+  Eb          →  cr.type_popSol                Pop SOL stack
+  Fb          →  cr.type_getBehaviorByName     Get behavior by name
+  Gb          →  cr.type_getBehaviorIndexByName Get behavior index
+  Hb          →  cr.type_getEffectIndexByName  Get effect index by name
+  Ib          →  cr.type_applySolToContainer   Apply SOL to container types
+  Jb          →  cr.type_getInstanceByIID      Get instance by IID
+  Kb          →  cr.type_toString              String representation "Type{sid}"
+
+--- 2G: Event System Classes ---
+
+  Ob          →  cr.eventsheet                 EventSheet runner class
+  vb          →  cr.selection                  SOL (Selected Object List) class
+  kc          →  cr.eventblock                 EventBlock/group class
+  ec          →  cr.condition                  Condition evaluator class
+  gc          →  cr.action                     Action executor class
+  hc          →  cr.expnode                    Expression parameter/node class
+  ic          →  cr.expvalue                   Expression value holder class
+  lc          →  (event variable class)        Local variable in events
+  Zb          →  (event stack frame)           Execution stack manager
+
+--- 2H: Event System Support ---
+
+  mc          →  cr.exptype                    Expression type enum
+                  mc.Xi=0 → Integer, mc.Vi=1 → Float, mc.String=2 → String
+  nc          →  cr.do_cmp                     Comparison function (0:==,1:!=,2:<,3:<=,4:>,5:>=)
+
+--- 2I: Layout/Layer Classes ---
+
+  Nb          →  cr.layout                     Layout class
+  cc          →  cr.layer                      Layer class
+
+--- 2J: Runtime Entry Points ---
+
+  ac          →  cr.createRuntime              Create Runtime from canvas ID
+  bc          →  cr.createDCRuntime            Create DC Runtime (w,h)
+
+--- 2K: Matrix/Vector (WebGL helpers, line 1015-1082) ---
+
+  pc          →  MatrixArray                   Float32Array || Array
+  qc(f)       →  vec3.create(f)               Create 3-element vector
+  rc(f)       →  mat4.create(f)               Create 4×4 matrix (identity/copy)
+  sc(f,l)     →  mat4.set(f,l)                Copy matrix src→dest
+  tc(f,l)     →  mat4.scale(f,l)              Scale matrix by vector
+  uc(f,l,q,k) → mat4.lookAt(eye,center,up,dest)  Create lookAt view matrix
+
+--- 2L: Audio System Variables (mid-file declarations) ---
+
+  ta          →  (audio effect tags)           Audio effect filter definitions (~line 9366)
+  Ra          →  (Audio instance prototype)    Audio plugin instance proto (~line 10040)
+  Cb          →  (listener UID array)          Audio listener UIDs (~line 10122)
+  Db          →  (preload cache array)         Audio preload cache (~line 10244)
+  wa          →  (instance availability)       Audio instance tracking (~line 10304)
+
+--- 2M: Feature Flags ---
+
+  Hc          →  (feature flag)                Boolean, controls built-in actions (~line 11359)
+  vc          →  cr.shaders                    Shader effect definitions object (~line 8229)
+
+
+################################################################################
+##                                                                            ##
+##  PART B — CORE CLASSES & PROTOTYPE METHODS                                 ##
+##                                                                            ##
+################################################################################
+
+================================================================================
+SECTION 3: cr.rect (ya) — Rectangle Class
+================================================================================
+
+  .set(l,t,r,b)       → .set(left,top,right,bottom)
+  .fj(src)             → .copy(src)
+  .width()             → .width()
+  .height()            → .height()
+  .offset(x,y)         → .offset(x,y)
+  .normalize()         → .normalize()
+  .xw(r)               → .intersects_rect(r)
+  .yw(r,ox,oy)         → .intersects_rect_off(r,ox,oy)
+  .Ab(x,y)             → .contains_pt(x,y)
+  .Yk(r)               → .equals(r)
+
+================================================================================
+SECTION 4: cr.quad (za) — Quad Class
+================================================================================
+
+  .Ji(r)               → .set_from_rect(r)
+  .ny(r,a)             → .set_from_rotated_rect(r,angle)
+  .offset(x,y)         → .offset(x,y)
+  .Av(r)               → .bounding_box(out_rect)
+  .Ab(x,y)             → .contains_pt(x,y)
+  .xc(i,axis)          → .at(index,axis)        Get corner coordinate
+  .qx()                → .midX()
+  .rx()                → .midY()
+  .nl(x1,y1,x2,y2)    → .intersects_segment(x1,y1,x2,y2)
+  .ww(q)               → .intersects_quad(q)
+
+================================================================================
+SECTION 5: cr.CollisionPoly (kb) — Collision Polygon
+================================================================================
+
+  .Fm(pts)             → .set_pts(pts)
+  .li()                → .is_empty()
+  .la()                → .update_bbox()
+  .Ji(r)               → .set_from_rect(r)
+  .ik(q,ox,oy,w,h)     → .set_from_quad(q,ox,oy,w,h)
+  .my(w,h,a)           → .cache_poly(w,h,angle)   Transform & cache
+  .Ng(w,h,a)           → .contains_pt(w,h,angle)  (context-dependent)
+  .Ab(x,y)             → .contains_pt(x,y)        (alternate signature)
+  .ml(p,ox,oy)         → .intersects_poly(p,offx,offy)
+  .nl(x1,y1,x2,y2)    → .intersects_segment(x1,y1,x2,y2)
+  .jG(w)               → .mirror(width)
+  .XE(h)               → .flip(height)
+  .PD()                → .diag()
+
+================================================================================
+SECTION 6: cr.ObjectSet (da) — Hash Set
+================================================================================
+
+  .contains(item)      → .contains(item)
+  .add(item)           → .add(item)
+  .remove(item)        → .remove(item)
+  .clear()             → .clear()
+  .Yf()                → .isEmpty()
+  .count               → .count               (getter property)
+  .tH()                → .update_cache()       Rebuild cache array
+  .md()                → .valuesRef()          Return cached values array
+
+================================================================================
+SECTION 7: cr.SparseGrid (lb) & cr.RenderGrid (mb)
+================================================================================
+
+--- SparseGrid (lb) ---
+  .$g(cx,cy)           → .getCell(cx,cy)
+  .Zc(x)               → .XToCell(x)
+  .$c(y)               → .YToCell(y)
+  .update(inst,old,new) → .update(inst,oldRect,newRect)
+  .Ep(r,cb)            → .queryRange(rect,callback)   Query cells in rect
+
+--- RenderGrid (mb) ---
+  .$g(cx,cy)           → .getCell(cx,cy)
+  .Zc(x)               → .XToCell(x)
+  .$c(y)               → .YToCell(y)
+  .update(inst,old,new) → .update(inst,oldRect,newRect)
+  .Ep(r,t,l,b,arr)    → .queryRange(rect,top,left,bottom,outArray)
+  .fG(inst)            → .markRangeChanged(inst)
+
+================================================================================
+SECTION 8: cr.KahanAdder (ib) — Kahan Summation
+================================================================================
+
+  .add(val)            → .add(val)
+  .reset()             → .reset()
+
+
+################################################################################
+##                                                                            ##
+##  PART C — GLWRAP (WebGL Wrapper)                                           ##
+##                                                                            ##
+################################################################################
+
+================================================================================
+SECTION 9: GLWrap Class — All Prototype Methods
+================================================================================
+
+Constructor: function f(a, h, d) in IIFE ~line 1084
+Assigned to: tb = f (line 2080)
+
+--- Initialization ---
+  .rw()                → .initGL()              Init GL state, buffers, shaders
+  .Vk(name,src)        → .createShaderProgram() Compile & link shader pair
+  .Zr(name)            → .getShaderIndex()      Find shader by name
+  .hf()                → .initState()           Initialize full GL state
+
+--- Projection & Transform ---
+  .Sx(x,y,out)         → .project()             World coords → screen coords
+  .qg(w,h,cam)         → .setSize()             Set viewport & projection
+  .ke()                → .resetModelView()       Reset transform to identity
+  .translate(x,y)      → .translate(x,y)        Apply translation
+  .scale(sx,sy)        → .scale(sx,sy)          Apply scaling
+  .Kp(a)               → .rotateZ(angle)        Apply Z-axis rotation
+  .Wd()                → .updateModelView()     Commit matrix to GPU
+  .Rp(z)               → .setEarlyZIndex()      Set depth for Z-sorting
+
+--- Batching ---
+  .Vc()                → .pushBatch()           Create new batch job
+  .ld()                → .endBatch()            Flush batch: upload & draw all
+
+--- Draw State ---
+  .Oe(r,g,b,a)         → .setColor()            Set RGBA draw color
+  .wc(tex)             → .setTexture()           Bind texture to TEXTURE0
+  .iw(tex)             → .setTexture1()          Bind secondary texture
+  .kt(src,dst)         → .setBlend()             Set blend factors
+  .jt()                → .setAlphaBlend()        Set premultiplied alpha blend
+  .lF()                → .getOpacity()           Get current opacity
+  .mF(o)               → .setOpacity()           Set opacity
+
+--- Drawing ---
+  .wh(x,y,r,b)         → .quad()                Draw textured quad
+  .dk(pts,uv,n)         → .convexPoly()          Draw convex polygon
+  .Cd(...)             → .quad3()                Draw 3D quad variant
+  .OG(...)             → .quadTexUV()            Draw quad with explicit UVs
+  .BG(x,y,s,o)         → .point()               Draw point sprite
+  .gk(...)             → .setProgramParameters() Set shader uniforms
+  .Yv()                → .fullscreenQuad()       Draw fullscreen quad
+
+--- Framebuffer ---
+  .clear(r,g,b,a)      → .clear()               Clear to RGBA color
+  .clearRect(x,y,w,h)  → .clearRect()            Clear rect with scissor
+  .um(tex)             → .setRenderTarget()       Bind render target (FBO)
+
+--- Shaders ---
+  .le(index)           → .switchProgram()        Switch shader program
+  .Bp(index)           → .switchToShader()       Switch to specific shader
+  .fy(i)               → .programPreservesOpaqueness()  Check alpha preservation
+  .cy(on)              → .setDepthTestEnabled()  Enable/disable depth test
+  .KG(i)               → .programExtendsBox()    Check if shader extends box
+  .by(r,g,b,a)         → .setColorFillMode()     Switch to fill shader
+  .jH()                → .setTextureFillMode()   Switch to texture shader
+  .UG()                → .restoreEarlyZMode()    Restore early-Z program
+  .JG()                → .present()              Finish batch & flush
+
+--- Z-Pass ---
+  .fy(on)              → .setEarlyZPass()        Enable/disable Z-prepass
+  .ay()                → .setAlphaBlend()        (reused for alpha blend setup)
+
+--- Texture Management ---
+  .fd(img,w,lin,ms)    → .loadTexture()          Load image as GL texture
+  .td(w,h,lin,ms)      → .createEmptyTexture()   Create blank FBO texture
+  .Zy(tex,video)       → .videoToTexture()        Update texture from video
+  .deleteTexture(obj)  → .deleteTexture()         Delete texture (ref counted)
+  .HD()                → .contextLost()           Clear caches on context loss
+
+
+################################################################################
+##                                                                            ##
+##  PART D — RUNTIME ENGINE                                                   ##
+##                                                                            ##
+################################################################################
+
+================================================================================
+SECTION 10: Runtime Class — Properties
+================================================================================
+
+Constructor: function f(b) in IIFE ~line 2086
+
+--- Core ---
+  .canvas              → .canvas                Canvas element
+  .width               → .width                 Canvas width
+  .height              → .height                Canvas height
+  .T / .gl             → .gl                    WebGL context
+  .H / .glwrap         → .glwrap                GLWrap instance
+  .$a / .ctx           → .ctx                   Canvas 2D context
+  .wa                  → .running_layout        Currently active layout
+  .S                   → .types_by_index        Type objects by index
+  .qb                  → .layouts_by_index      Layout objects by index
+  .Fs                  → .layouts               Layouts by name
+  .He                  → .event_sheets          Event sheets
+  .wy                  → .objectRefTable        Object reference table (469 entries)
+  .jg                  → .objectsByUid          UID → instance map
+  .Mr                  → .next_uid              Next UID counter
+  .Qh                  → .deathRow              Instances pending destruction
+  .qs                  → .hasPendingInstances   Flag for pending creation
+  .Mh                  → .changelayout          Layout change request
+  .ko                  → .destroycallbacks      Destruction callback list
+  .Ce                  → .createRow             Instances pending creation
+  .X                   → .redraw                Redraw needed flag
+  .mb                  → .original_width        Original project width
+  .lb                  → .original_height       Original project height
+
+--- Time ---
+  .Db                  → .kahanTime             Kahan time adder
+  .Cg                  → .wallTime              Wall clock time adder
+  .Ch                  → .timescale             Game timescale
+  .ip                  → .fps                   Frames per second
+  .Sh                  → .dt                    Delta time (scaled)
+  .Rh                  → .dt1                   Delta time (raw)
+  .Xh                  → .tickcount             Game tick count
+  .Vd                  → .tickcount_nosave      Tick count (non-saveable)
+
+--- Loading ---
+  .ql                  → .isloading             True during load
+  .Ml                  → .loadingprogress       Loading progress 0–1
+  .sl                  → .isSuspended           Paused state
+
+--- Platform Detection ---
+  .Sc                  → .isCocoonJs            CocoonJS environment
+  .Md                  → .isEjecta              Ejecta environment
+  .Ld                  → .isCordova             Cordova environment
+  .Qo                  → .isNWjs                NW.js environment
+  .ns                  → .isChrome              Chrome browser
+  .Zf                  → .isMobile              Mobile device
+
+--- Event System ---
+  .Fi                  → .allGroups             All event groups
+  .wj                  → .groups_by_name        Groups by name
+  .Rg                  → .cndsBySid             Conditions by SID
+  .Hg                  → .actsBySid             Actions by SID
+  .rk                  → .varsBySid             Variables by SID
+  .Ul                  → .loop_stack            Loop execution stack
+  .Ls                  → .localvar_stack        Local variable stack
+
+================================================================================
+SECTION 11: Runtime Class — All Prototype Methods
+================================================================================
+
+--- Loading & Initialization ---
+  .TG()                → .requestProjectData()   Load data.js via XHR
+  .IF()                → .initProject()           Set up WebGL, listeners, assets
+  .setSize(w,h,d)      → .setSize(w,h,force)     Set canvas size & viewport
+  .My()                → .tryLockOrientation()    Lock device orientation
+  .oG()                → .onContextLost()         Handle WebGL context loss
+  .pG()                → .onContextRestored()     Handle WebGL context restore
+  .Rx()                → .positionOverlayCanvas() Position overlay canvas
+  .Ll(data)            → .loadProject(data)       Parse & load project JSON
+  .PG(url,cb)          → .queueImageLoad()        Queue image for preload
+  .mx()                → .maybeLoadNextImages()   Process queued loads
+  .sk()                → .loadTextures()           Load texture batch
+  .WE(id)              → .findWaitingTexture()    Find queued texture by ID
+  .BF()                → .getAudioPreloadDuration()  Audio preload estimate
+  .vv()                → .initRendererAndLoader()  Init WebGL + loader
+
+--- Main Loop ---
+  .go()                → .go()                    Main game tick / RAF callback
+  .lE(ctx)             → .drawLoadingScreen()      Render loading splash
+  .CF()                → .startRunning()           Begin layout execution
+
+--- Suspend/Resume ---
+  .setSuspended(s)     → .setSuspended(s)         Pause/resume game
+  .qv(cb)              → .addSuspendCallback(cb)  Register suspend handler
+  .Eg(sig)             → .signalSuspend()         Internal suspend signal
+
+--- Rendering ---
+  .ya(index)           → .GetObjectReference(i)   Get ref from objectRefTable
+  .lg()                → .tick()                   Full tick cycle
+  .zc()                → .draw()                   Canvas 2D render
+  .nb()                → .drawGL()                 WebGL render
+
+--- Layout Management ---
+  .Nv(layout)          → .doChangeLayout()         Execute layout change
+  .Zx(layout)          → .runLayoutChangeMethods() Push/pop effect stacks
+  .dl(v)               → .getLayer(v)              Get layer by name/index
+  .mr(name)            → .getLayerByName(name)     Get layer by name string
+  .vm(n)               → .getLayerByNumber(n)      Get layer by number
+  .xf(name)            → .getLayoutByName(name)    Get layout by name
+  .Td(sid)             → .getLayoutBySid(sid)      Get layout by SID
+  .Dd(name)            → .getEventSheetByName(name) Get event sheet
+
+--- Instance Management ---
+  .Ef(inst)            → .pretickMe(inst)          Add to pretick list
+  .rH(inst)            → .unpretickMe(inst)        Remove from pretick list
+  .Id(inst)            → .getDt(inst)              Get delta time for instance
+  .uj(data)            → .createInstanceFromInit()  Create from layout init
+  .Yn(type,l,x,y)     → .createInstanceHelper()    Instance creation helper
+  .Ut(type,l,x,y,cr)  → .createInstance()          Create instance in world
+  .Tt(uid)             → .getObjectByUID(uid)       Get instance by UID
+  .tj(uid)             → .getObjectByUID(uid)       (alias)
+
+--- Destruction ---
+  .bh(inst)            → .DestroyInstance(inst)     Destroy immediately
+  .vd(inst)            → .destroyInstanceInternal() Internal destroy
+  .$e(arr)             → .iterateDeathRow()         Process death row
+  .Hc()                → .handleDeathRow()          Handle death row flush
+  .CA()                → .ClearDeathRow()           Clear all dead instances
+  .sz(type)            → .ClearDeathRowForType()    Clear dead of one type
+  .En(cb)              → .addDestroyCallback(cb)    Register destroy callback
+  .Wx(cb)              → .removeDestroyCallback(cb) Remove destroy callback
+
+--- Collision System ---
+  .Sg(a,b,ox,oy,ign,me)→ .testOverlap()           Collision overlap test
+  .rz(inst)            → .updateCollisionGrid()     Update collision cell
+  .By(type,x,y)        → .testAndSelectCanvasPointOverlap()
+  .Ay(type,rect,inst)  → .getCollisionCandidates()  Get nearby objects
+  .Ny(type,beh)        → .typeHasBehavior()         Check type has behavior
+  .Tt(inst)            → .testOverlapSolid()         Test vs solid
+  .Ut(inst)            → .testOverlapJumpThru()      Test vs jumpthru
+  .xm(inst,dx,dy,max)  → .pushOutSolidAxis()        Push out from solid
+  .NG(inst,dx,dy,max,s)→ .pushOut()                 Push out from collision
+  .LG(inst,dx,dy,max)  → .pushInFractional()        Fractional push-in
+  .ck(inst,max)        → .pushOutSolidNearest()      Push from nearest solid
+  .Ei(a,b)             → .registerCollision()        Register collision pair
+  .qD(type,arr)        → .addRegisteredCollisionCandidates()
+  .FD(a,b)             → .checkRegisteredCollision()
+  .hr(inst,a)          → .calculateSolidBounceAngle() Calculate bounce angle
+  .zg(a,b)             → .testOverlapDetailed()       Polygon collision test
+  .lk(type,x,y)        → .testAndSelectCanvasPointOverlap()
+
+--- Event Triggers ---
+  .trigger(method,inst,type) → .trigger()            Fire event trigger
+  .Ky(method,inst,type,sheet)→ .triggerOnSheet()      Trigger on specific sheet
+  .Rt(...)             → .triggerOnSheetForTypeName() Trigger on type's sheet
+  .TE(...)             → .executeSingleTrigger()      Execute one trigger block
+  .of()                → .getCurrentCondition()       Get current condition
+  .eF()                → .getCurrentConditionObjectType()
+  .KF()                → .isCurrentConditionFirst()
+  .dF()                → .getCurrentAction()          Get current action
+
+--- Variable/Stack Management ---
+  .MG()                → .pushLocalVarStack()        Push local var scope
+  .DG()                → .popLocalVarStack()         Pop local var scope
+  .aw()                → .getCurrentLocalVarStack()  Get current local vars
+  .Dp(frame)           → .pushEventStack()            Push event execution frame
+  .yp()                → .popEventStack()             Pop event frame
+  .bb()                → .getCurrentEventStack()      Get current event context
+  .wm()                → .pushLoopStack()             Push loop scope
+  .qm()                → .popLoopStack()              Pop loop scope
+  .bw()                → .getCurrentLoop()            Get current loop
+  .ew(name,scope)      → .getEventVariableByName()   Get variable by name
+  .gw(name)            → .getLayoutByName()           (implementation)
+
+--- Save/Load ---
+  .fF(inst)            → .saveInstanceToJSON()         Serialize instance
+  .RD(fmt,cb)          → .doCanvasSnapshot()           Screenshot to file
+  .DF()                → .Pause()                      Pause runtime
+  .cH()                → .signalContinuousPreview()    Resume/preview
+  .Vx()                → .refreshUidMap()              Rebuild UID map
+  .aG(json)            → .loadFromJSONString()         Load saved game
+  .zt(inst,json)       → .saveInstanceToJSON()         Serialize with props
+  .hF(type,sid)        → .getInstanceVarIndexBySid()
+  .cF(type,sid)        → .getBehaviorIndexBySid()
+  .$o(inst,data)       → .restoreInstanceData()        Restore from save
+
+--- Cordova File I/O ---
+  .Uv(url,cb)          → .fetchLocalFileViaCordova()
+  .Jr(url,cb)          → .fetchLocalFileViaCordovaAsArrayBuffer()
+  .Qs()                → .maybeStartNextArrayBufferRead()
+  .Vv(url,cb)          → .doFetchLocalFileViaCordovaAsArrayBuffer()
+  .TD(url)             → .resolveRelativeUrl()
+  .UE(url,cb)          → .fetchLocalFileViaCordovaAsURL()
+  .zw(url)             → .isAbsoluteUrl()
+
+--- Misc ---
+  .gy(img,cb)          → .waitForImageLoad()           Wait for img load
+  .Qp(ctx,on)          → .setCtxImageSmoothingEnabled() Set canvas smoothing
+  .Sr(a,b,c,d)         → .destroyCallbackHandler1()    Collision destroy
+  .Do(a,b,c,d)         → .destroyCallbackHandler2()    Linked destroy
+  .jw(a,b,c)           → .destroyCollisionTest()        Collision on destroy
+
+
+################################################################################
+##                                                                            ##
+##  PART E — LAYOUT & LAYER CLASSES                                           ##
+##                                                                            ##
+################################################################################
+
+================================================================================
+SECTION 12: Layout Class — Properties
+================================================================================
+
+  .b                   → .runtime               Runtime reference
+  .name                → .name                  Layout name string
+  .xG                  → .originalWidth          Original width
+  .wG                  → .originalHeight         Original height
+  .width               → .width                 Current width
+  .height              → .height                Current height
+  .scrollX             → .scrollX               Camera scroll X
+  .scrollY             → .scrollY               Camera scroll Y
+  .scale               → .scale                 Layout scale
+  .u                   → .angle                 Layout angle
+  .oj                  → .first_visit           First visit flag
+  .Oy                  → .unbounded_scrolling   Unbounded scroll flag
+  .ry                  → .sheetname             Event sheet name
+  .Ba                  → .sid                   Layout SID
+  .ua                  → .layers                Layer array
+  .eh                  → .initial_nonworld      Initial non-world instances
+  .ll                  → .initial_types         Initial type list
+  .qa                  → .effect_types          Effect types
+  .Qa                  → .active_effect_types   Active effects
+  .sg                  → .shaders_preserve_opaqueness
+  .ob                  → .effect_params         Effect parameters
+  .Vh                  → .event_sheet           Event sheet reference
+  .je                  → .rcTex                 Temp rect for textures
+  .mt                  → .rcTex2                Temp rect for textures 2
+  .sh                  → .persist_data          Persistence data
+
+================================================================================
+SECTION 13: Layout Class — All Prototype Methods
+================================================================================
+
+  .bH(inst)            → .saveObjectToPersist()   Store to persist_data
+  .mw()                → .hasOpaqueBottomLayer()  Check bottom layer opaque
+  .We()                → .updateActiveEffects()    Rebuild active effects
+  .Ao(name)            → .getEffectByName()        Find effect by name
+  .JD()                → .startRunning()           Init layout, create instances
+  .nH()                → .onCreate()               Trigger OnLayoutStart
+  .Ht()                → .updateViewport()         Update viewport bounds
+  .zc(ctx)             → .draw()                   Canvas 2D render
+  .nb(glw)             → .drawGL()                 WebGL render (effects/scaling)
+  .Qf()                → .prefetchTextures()       Preload layer textures
+  .el()                → .getRenderTarget()        Get effect texture or null
+  .hw()                → .getMinLayerScale()       Min layer scale (scroll)
+  .At(x)               → .scrollToX(x)             Scroll camera X
+  .Bt(y)               → .scrollToY(y)             Scroll camera Y
+  .BD()                → .boundScrolling()         Clamp scroll to bounds
+  .ot(...)             → .drawInstances()          Draw with effect chain
+  .Bo(inst_id)         → .getLayerByInstanceId()   Find layer for instance
+  .Fa()                → .saveToJSON()             Serialize layout state
+  .La(json)            → .loadFromJSON()           Restore layout from JSON
+
+================================================================================
+SECTION 14: Layer Class — Properties
+================================================================================
+
+  .Eb                  → .layout                Parent layout
+  .b                   → .runtime               Runtime reference
+  .name                → .name                  Layer name string
+  .index               → .index                 Layer index
+  .Ba                  → .sid                   Layer SID
+  .visible             → .visible               Visibility
+  .xe                  → .background_color      Background color array
+  .Ue                  → .transparent           Is transparent
+  .Rb                  → .parallaxX             Parallax X rate
+  .Sb                  → .parallaxY             Parallax Y rate
+  .opacity             → .opacity               Layer opacity 0–1
+  .qj                  → .forceOwnTexture       Force own texture flag
+  .Xd                  → .useRenderCells        Use render cells
+  .ub                  → .zoomRate              Zoom rate
+  .Ic                  → .blend_mode            Blend mode
+  .q                   → .instances             Instance array
+  .scale               → .scale                 Layer scale
+  .u                   → .angle                 Layer angle
+  .Pf                  → .disableAngle          Disable angle flag
+  .Ca                  → .viewLeft              Viewport left
+  .Da                  → .viewRight             Viewport right
+  .Ha                  → .viewTop               Viewport top
+  .Ga                  → .viewBottom            Viewport bottom
+  .Ti                  → .zindices_stale        Z-indices dirty flag
+  .Dg                  → .zindices_stale_from   First dirty index
+  .Kd                  → .initial_instances     Initial instance data
+  .xy                  → .startup_initial_instances  Copy of initial
+  .Wk                  → .created_globals       Created global instances
+  .qa                  → .effect_types          Effect types
+  .Qa                  → .active_effect_types   Active effects
+  .sg                  → .shaders_preserve_opaqueness
+  .ob                  → .effect_params         Effect parameters
+  .Tk                  → .compositeOp           Canvas composite op string
+  .Qc                  → .srcBlend              WebGL source blend
+  .Jc                  → .destBlend             WebGL dest blend
+  .Fc                  → .render_grid           RenderGrid instance
+  .bg                  → .last_render_list      Cached render list
+  .Ke                  → .render_list_stale     Render list dirty flag
+  .Oj                  → .last_render_cells     Last rendered cells rect
+  .yc                  → .cur_render_cells      Current render cells rect
+  .yf                  → .render_offscreen      Render offscreen flag
+  .je                  → .rcTex                 Temp rect
+  .mt                  → .rcTex2                Temp rect 2
+
+================================================================================
+SECTION 15: Layer Class — All Prototype Methods
+================================================================================
+
+  .zc(ctx)             → .draw()                Canvas 2D render
+  .nb(glw)             → .drawGL()              WebGL render
+  .KD()                → .createInitialInstances() Create from initial data
+  .ek(inst)            → .removeFromInstanceList() Remove instance
+  .Ok(inst)            → .appendToInstanceList()   Add to end
+  .IG(inst)            → .prependToInstanceList()  Add to beginning
+  .kG(inst,ref,above)  → .moveInstanceAdjacent()   Move relative to another
+  .We()                → .updateActiveEffects()    Rebuild active effects
+  .Ao(name)            → .getEffectByName()        Find effect by name
+  .Ht()                → .updateViewport()         Update viewport bounds
+  .Ao(idx)             → .setZIndicesStaleFrom()   Mark Z dirty from index
+  .ot(...)             → .drawInstances()          Draw layer instances
+  .Bo(...)             → .renderEffectChain()      Execute post-processing
+  .Fa()                → .saveToJSON()             Serialize layer state
+  .La(json)            → .loadFromJSON()           Restore layer from JSON
+
+  --- Layer Coordinate Transform (on prototype) ---
+  .Wa(x,y,inv)         → .canvasToLayer()         Canvas → layer coords
+  .Pp(x,y,inv)         → .layerToCanvas()         Layer → canvas coords
+
+
+################################################################################
+##                                                                            ##
+##  PART F — TYPE & INSTANCE CLASSES                                          ##
+##                                                                            ##
+################################################################################
+
+================================================================================
+SECTION 16: Type (Object Type) Class — Properties
+================================================================================
+
+  .r / .plugin         → .plugin                Plugin reference
+  .name                → .name                  Type name string
+  .R                   → .is_family             Is a family type
+  .ms                  → .instvar_sids          Instance variable SIDs
+  .Ba                  → .sid                   Type SID
+  .fg                  → .members               Family member types
+  .pb                  → .families              Families this type belongs to
+  .Vf                  → .family_index          Index in family system
+  .ro                  → .family_var_map        Family variable mapping
+  .nj                  → .family_beh_map        Family behavior mapping
+  .oc                  → .is_contained          Part of container
+  .sd                  → .container             Container reference
+  .Ni                  → .texture_file          Texture filename
+  .mk                  → .texture_filesize      Texture file size
+  .Df                  → .texture_pixelformat   Texture pixel format
+  .qd                  → .animations            Animation data
+  .index               → .index                Type index
+  .q                   → .instances             Instance array
+  .eo                  → .deadCache             Recycled instance pool
+  .yg                  → .solstack              SOL stack
+  .ff                  → .cur_sol               Current SOL index
+  .be                  → .default_instance      Default instance data
+  .kk                  → .stale_iids            IIDs need refresh flag
+  .qb                  → .behaviors             Behavior array
+  .qa                  → .effect_types          Effect type array
+  .Hn                  → .any_instance_parallaxed  Instance parallax flag
+  .Mk                  → .is_world              Is a world plugin type
+  .Z                   → .extra                 Extra data cache object
+
+  --- Type Prototype/Plugin Link ---
+  .K                   → .Type                  Type constructor function
+  .J                   → .Instance              Instance constructor function
+
+================================================================================
+SECTION 17: Type Methods (assigned via wb/xb/yb/... globals)
+================================================================================
+
+  .lq()                → .updateIIDs()           Recalculate instance IIDs
+  .sj(inst)            → .getFirstPicked(inst)   Get first picked instance
+  .jF(inst)            → .getPairedInstance(inst) Get container pair
+  .aa()                → .getCurrentSol()         Get current SOL
+  .vm()                → .pushCleanSol()          Push empty SOL
+  .xf()                → .pushCopySol()           Push copy of current SOL
+  .Td()                → .popSol()                Pop SOL stack
+  .zo(name)            → .getBehaviorByName()     Get behavior by name
+  .Qr(name)            → .getBehaviorIndexByName() Get behavior index
+  .Tr(name)            → .getEffectIndexByName()  Get effect index by name
+  .bd()                → .applySolToContainer()   Apply SOL to container
+  .Wr(iid)             → .getInstanceByIID(iid)   Get instance by IID
+  .toString()          → .toString()              "Type{sid}"
+
+================================================================================
+SECTION 18: Instance Class — Properties
+================================================================================
+
+  .type                → .type                  Type reference
+  .uid                 → .uid                   Unique ID
+  .Ux / .puid          → .puid                  Persistent UID
+  .hi / .iid           → .iid                   Instance index in type
+  .B                   → .properties            Plugin properties array
+  .cc                  → .instance_vars         Instance variable array
+  .x                   → .x                     X position
+  .y                   → .y                     Y position
+  .z                   → .z                     Z elevation
+  .width               → .width                 Width
+  .height              → .height                Height
+  .u / .angle          → .angle                 Rotation angle (radians)
+  .opacity             → .opacity               Opacity 0–1
+  .visible             → .visible               Visibility flag
+  .hotspotX            → .hotspotX              Hotspot X (0–1)
+  .hotspotY            → .hotspotY              Hotspot Y (0–1)
+  .Ic                  → .blend_mode            Blend mode index
+  .qa                  → .effect_types          Effect types array
+  .Qa                  → .active_effect_types   Active effects
+  .Gg                  → .active_effect_flags   Effect enabled flags
+  .ob                  → .effect_params         Effect parameters
+  .ka / .bbox          → .bbox                  Bounding box (cr.rect)
+  .Wb / .bquad         → .bquad                 Bounding quad (cr.quad)
+  .C / .layer          → .layer                 Layer reference
+  .Ye / .zindex        → .zindex                Z-index in layer
+  .tv                  → .collisionsEnabled     Collision enabled flag
+  .Ia                  → .collision_poly        Collision polygon
+  .Nn                  → .bbox_changed          Bbox dirty flag
+  .lr                  → .collgrid_changed      Collision grid dirty flag
+  .Gd                  → .visible_in_hierarchy  Visible (including layer)
+  .$l                  → .tilemap_exists        Tilemap existence flag
+  .er                  → .bbox_changed_callbacks  Bbox change callback array
+  .jd                  → .rendergrid_rect       Render grid cell rect
+  .$d                  → .collgrid_rect         Collision grid cell rect
+  .Pi                  → .has_custom_collision   Custom collision poly flag
+  .Gy                  → .collision_poly_ox      Collision poly offset X
+  .Fy                  → .collision_poly_oy      Collision poly offset Y
+  .Ey                  → .collision_poly_pts     Collision poly points
+  .Xy                  → .has_active_effects     Has any active effects
+  .sg                  → .shaders_preserve_opaqueness
+
+================================================================================
+SECTION 19: Instance Methods (assigned dynamically)
+================================================================================
+
+  .P()                 → .set_bbox_changed()     Mark bbox dirty + fire callbacks
+  .sD(cb)              → .add_bbox_changed_callback(cb) Register callback
+  .Ab(x,y)             → .contains_pt(x,y)       Point-in-instance test
+  .la()                → .update_bbox()           Recalculate bbox
+  .Wy()                → .update_render_grid_pos() Update render grid cell
+  .Yt()                → .update_collision_grid_pos() Update collision cell
+  .ge()                → .getZIndex()             Get Z-index (refresh if stale)
+  .We()                → .updateActiveEffects()   Rebuild active effects array
+  .toString()          → .toString()             "Inst{puid}"
+
+
+################################################################################
+##                                                                            ##
+##  PART G — EVENT SYSTEM                                                     ##
+##                                                                            ##
+################################################################################
+
+================================================================================
+SECTION 20: EventSheet Class (Ob / cr.eventsheet)
+================================================================================
+
+Properties:
+  .b                   → .runtime
+  .Ly                  → .triggers              Regular trigger map
+  .Tv                  → .fasttriggers          Fast trigger map
+  .ds                  → .deep_includes_done    Deep includes calculated
+  .qw                  → .includes              Included sheets
+  .Vg                  → .events                Event block array
+
+Methods:
+  .toString()          → .toString()            Return sheet name
+  .sw(data)            → .init_event(data)      Initialize event structure
+  .Hb()                → .postInit()            Post-initialization
+  .Vt()                → .updateDeepIncludes()  Recalculate includes
+  .ov(set)             → .addDeepIncludes(set)  Add includes recursively
+  .Ub()                → .run()                 Execute event sheet
+  .uw(method,type)     → .init_trigger(m,t)     Register trigger event
+
+================================================================================
+SECTION 21: SOL / Selection Class (vb / cr.selection)
+================================================================================
+
+Properties:
+  .type                → .type                  Object type
+  .q                   → .instances             Selected instances array
+  .ra                  → .else_instances        Else branch instances
+  .ca                  → .select_all            Select all flag
+
+Methods:
+  .Jo()                → .hasObjects()          Check for selected objects
+  .$b()                → .getObjects()          Return instances array
+  .$j()                → .pick_one()            Pick single instance
+
+================================================================================
+SECTION 22: EventBlock Class (kc / cr.eventblock)
+================================================================================
+
+Properties:
+  .sheet               → .sheet                 Parent event sheet
+  .parent              → .parent                Parent block
+  .Sd                  → .orblock               Is OR block flag
+  .Yb                  → .conditions            Conditions array
+  .Yd                  → .actions               Actions array
+  .ne                  → .subevents             Sub-events array
+  .ib                  → .solModifiers          SOL modifier types
+  .ba                  → .sid                   Event SID
+  .sc                  → .retrigger             Can retrigger flag
+  .jb                  → .orblock               Is OR block
+  .gb                  → .group                 Group data (if group)
+
+Methods:
+  .Hb()                → .postInit()            Initialize block
+  .Dm(active)          → .setGroupActive(a)     Activate/deactivate group
+  .pv(type)            → .addSolModifier(type)  Add type to SOL modifiers
+  .pD(type)            → .addParentSolModifier() Add parent's SOL modifier
+  .Tp()                → .setSolWriterAfterCnds() Mark SOL changes
+  .Gw()                → .is_trigger()          Check if trigger-type event
+  .Ub()                → .run()                 Execute conditions + actions
+  .oE()                → .end_run()             Finalize after run
+  .Lp()                → .run_actions()         Run actions after conditions pass
+  .$x()                → .run_subevents()       Execute child subevents
+  .ZG()                → .check_all_conditions() Check all conditions
+  .Le()                → .execute_event_line()  Execute single event line
+  .MF()                → .isFirstConditionOfType()
+
+================================================================================
+SECTION 23: Condition Class (ec / cr.condition)
+================================================================================
+
+Properties:
+  .Fd                  → .block                 Parent event block
+  .type                → .type                  Object type
+  .Ac                  → .func                  Condition function reference
+  .ea                  → .params                Parameter array
+  .Ba                  → .sid                   Condition SID
+  .Ye                  → .index                 Condition index
+  .jb                  → .inverted              Inverted flag
+  .sc                  → .trigger               Is trigger condition
+
+Methods:
+  .Hb()                → .postInit()            Initialize condition
+  .yt()                → .run_system()           Execute as system condition
+  .xt()                → .run_object()           Execute on object instances
+  .aH()                → .run_trigger()          System event trigger
+  .$G()                → .run_fast_trigger()     Fast trigger variant
+
+================================================================================
+SECTION 24: Action Class (gc / cr.action)
+================================================================================
+
+Properties:
+  .Fd                  → .block                 Parent event block
+  .type                → .type                  Object type
+  .Ac                  → .func                  Action function reference
+  .ea                  → .params                Parameter array
+  .Ba                  → .sid                   Action SID
+
+Methods:
+  .Hb()                → .postInit()            Initialize action
+  .yt()                → .run_system()           Execute as system action
+  .xt()                → .run_object()           Execute on object instances
+
+================================================================================
+SECTION 25: Expression Parameter Class (hc / cr.expnode)
+================================================================================
+
+Properties:
+  .Fd                  → .owner                 Parent event block
+  .type                → .type                  Value type (0=int,1=float,2=str)
+  .Wh                  → .value                 Stored value / reference
+  .Wv                  → .second_value          Secondary value / sub-param
+
+Methods:
+  .sF()                → .get()                 Evaluate and return value
+  .tF()                → .get_str()             Get as string
+  .zF()                → .get_object_class()    Get object type reference
+  .qF()                → .get_object_uid()      Get object UID
+  .xF()                → .get_instance()        Get instance reference
+  .yF()                → .get_object_property() Get display property
+  .wF()                → .get_key()             Get lookup key
+  .vF()                → .get_index()           Get frame/return index
+  .uF()                → .get_family_chosen()   Get chosen in families
+  .rF()                → .get_local_var()       Get local variable ref
+  .pF()                → .get_sub_param()       Get sub-parameter
+  .AF()                → .get_all_params()      Get all sub-parameters array
+
+================================================================================
+SECTION 26: Expression Value Class (ic / cr.expvalue)
+================================================================================
+
+Properties:
+  .type                → .type                  Value type (mc enum)
+  .data                → .data                  Stored value
+  .object_class        → .object_class          Object type (if applicable)
+
+Methods:
+  .E(v)                → .set_int(v)            Set integer value
+  .F(v)                → .set_float(v)          Set float value
+  .xa(v)               → .set_string(v)         Set string value
+  .zh(v)               → .set_any(v)            Set any value type
+
+Expression Type Enum (mc / cr.exptype):
+  mc.Xi = 0            → cr.exptype.Integer
+  mc.Vi = 1            → cr.exptype.Float
+  mc.String = 2        → cr.exptype.String
+
+Comparison Function (nc / cr.do_cmp):
+  nc(a, op, b): 0=Equal, 1=NotEqual, 2=Less, 3=LessEqual, 4=Greater, 5=GreaterEqual
+
+
+################################################################################
+##                                                                            ##
+##  PART H — PLUGIN/BEHAVIOR SYSTEM                                           ##
+##                                                                            ##
+################################################################################
+
+================================================================================
+SECTION 27: Plugin/Behavior Prototype System
+================================================================================
+
+  Every plugin/behavior constructor defines:
+  
+  Obfuscated  →  Unobfuscated     Description
+  ----------     --------------   ---------------------------------
+  .K            → .Type           Plugin type constructor
+  .J            → .Instance       Plugin instance constructor
+  .k            → .cnds           Conditions object
+  .n            → .acts           Actions object
+  .A            → .exps           Expressions object
+
+  Additionally, each Instance prototype has:
+  .Fa()          → .saveToJSON()   Serialize instance state
+  .La(data)      → .loadFromJSON() Restore instance state
+
+================================================================================
+SECTION 28: Plugin Constructors (objectRefTable indices 0–19)
+================================================================================
+
+  Index  Obfuscated  →  Unobfuscated             Singleglobal  World
+  -----  ----------     ----------------------   -----------   -----
+  0      Mc          →  cr.plugins_.NinePatch    No            Yes
+  1      Ac          →  cr.plugins_.AJAX         Yes           No
+  2      Bc          →  cr.plugins_.Arr          Yes (data)    No
+  3      Cc          →  cr.plugins_.Audio        Yes           No
+  4      Dc          →  cr.plugins_.Browser      Yes           No
+  5      Ec          →  cr.plugins_.Dictionary   Yes (data)    No
+  6      zc          →  cr.plugins_.Function     Yes           No
+  7      Kc          →  cr.plugins_.LocalStorage Yes           No
+  8      Lc          →  cr.plugins_.Mouse        Yes           No
+  9      Gc          →  cr.plugins_.List         No            Yes
+  10     Nc          →  cr.plugins_.Particles    No            Yes
+  11     Fc          →  cr.plugins_.Keyboard     Yes           No
+  12     Pc          →  cr.plugins_.TextBox      No            Yes
+  13     Y           →  cr.plugins_.Text         No            Yes
+  14     Qc          →  cr.plugins_.TiledBg      No            Yes
+  15     Sc          →  cr.plugins_.Touch        Yes           No
+  16     Rc          →  cr.plugins_.Tilemap      No            Yes
+  17     Oc          →  cr.plugins_.Spritefont2  No            Yes
+  18     W           →  cr.plugins_.Sprite       No            Yes
+  19     Tc          →  cr.plugins_.XML          Yes           No
+
+================================================================================
+SECTION 29: Behavior Constructors (objectRefTable indices 20–37)
+================================================================================
+
+  Index  Obfuscated  →  Unobfuscated             Description
+  -----  ----------     ----------------------   -----------------
+  20     bd          →  cr.behaviors.Pin         Pin to object
+  21     Xc          →  cr.behaviors.DragnDrop   Drag & drop
+  22     $c          →  cr.behaviors.Flash       Flash visibility
+  23     md          →  cr.behaviors.destroy     Destroy outside layout
+  24     ld          →  cr.behaviors.bound       Keep in bounds
+  25     od          →  cr.behaviors.scrollto    Scroll to follow
+  26     jd          →  cr.behaviors.Timer       Timer events
+  27     ad          →  cr.behaviors.LOS         Line of sight
+  28     xc          →  cr.behaviors.solid       Solid collision
+  29     yc          →  cr.behaviors.NoSave      Exclude from save
+  30     Yc          →  cr.behaviors.EightDir    8-direction movement
+  31     Zc          →  cr.behaviors.Fade        Fade animation
+  32     Vc          →  cr.behaviors.Bullet      Bullet movement
+  33     kd          →  cr.behaviors.Turret      Turret targeting
+  34     Uc          →  cr.behaviors.Anchor      Anchor to viewport
+  35     cd          →  cr.behaviors.Rotate      Rotation behavior
+  36     dd          →  cr.behaviors.Sin         Sinusoidal motion
+  37     Wc          →  cr.behaviors.Car         Car movement
+
+================================================================================
+SECTION 30: System Object (H / cr.system_object)
+================================================================================
+
+  H              →  cr.system_object
+
+  H.prototype.k  → cr.system_object.prototype.cnds (conditions)
+  H.prototype.n  → cr.system_object.prototype.acts (actions)
+  H.prototype.A  → cr.system_object.prototype.exps (expressions)
+  H.prototype.Fa → cr.system_object.prototype.saveToJSON
+  H.prototype.La → cr.system_object.prototype.loadFromJSON
+
+
+################################################################################
+##                                                                            ##
+##  PART I — COMPLETE OBJECTREFTABLE (469 entries)                            ##
+##                                                                            ##
+################################################################################
+
+================================================================================
+SECTION 31: objectRefTable Method Entries (indices 38–468)
+================================================================================
+
+FORMAT: Index  ObfuscatedEntry  →  UnobfuscatedEntry
+
+  38     H.prototype.k.qA                    →  system_object.cnds.IsGroupActive
+  39     H.prototype.k.Iu                    →  system_object.cnds.OnLayoutStart
+  40     zc.prototype.k.qn                   →  Function.cnds.OnFunction
+  41     H.prototype.n.GC                    →  system_object.acts.SetVar
+  42     H.prototype.A.zH                    →  system_object.exps.viewportright
+  43     H.prototype.A.yH                    →  system_object.exps.viewportleft
+  44     H.prototype.A.xH                    →  system_object.exps.viewportbottom
+  45     H.prototype.A.AH                    →  system_object.exps.viewporttop
+  46     H.prototype.k.Iz                    →  system_object.cnds.CompareVar
+  47     W.prototype.n.Ek                    →  Sprite.acts.SetPos
+  48     H.prototype.n.iC                    →  system_object.acts.SetLayerScale
+  49     H.prototype.k.yz                    →  system_object.cnds.CompareBetween
+  50     Xc.prototype.n.od                   →  DragnDrop.acts.SetEnabled
+  51     H.prototype.k.xz                    →  system_object.cnds.Compare
+  52     H.prototype.A.XF                    →  system_object.exps.layoutname
+  53     W.prototype.n.Ze                    →  Sprite.acts.Destroy
+  54     H.prototype.n.fD                    →  system_object.acts.Wait
+  55     W.prototype.n.xn                    →  Sprite.acts.SetY
+  56     W.prototype.n.$i                    →  Sprite.acts.SetX
+  57     bd.prototype.n.rB                   →  Pin.acts.Pin
+  58     Y.prototype.n.Ek                    →  Text.acts.SetPos
+  59     W.prototype.A.jA                    →  Sprite.exps.ImagePointX
+  60     W.prototype.A.kA                    →  Sprite.exps.ImagePointY
+  61     W.prototype.A.Wi                    →  Sprite.exps.Height
+  62     W.prototype.n.$u                    →  Sprite.acts.SetPosToObject
+  63     W.prototype.n.Bq                    →  Sprite.acts.MoveToBottom
+  64     W.prototype.k.Az                    →  Sprite.cnds.CompareFrame
+  65     W.prototype.A.bf                    →  Sprite.exps.X
+  66     W.prototype.A.cf                    →  Sprite.exps.Y
+  67     Dc.prototype.k.Ak                   →  Browser.cnds.OnBackButton
+  68     W.prototype.k.pn                    →  Sprite.cnds.IsOnScreen
+  69     zc.prototype.n.CallFunction         →  Function.acts.CallFunction
+  70     H.prototype.k.lu                    →  system_object.cnds.Else
+  71     W.prototype.k.Ui                    →  Sprite.cnds.CompareInstanceVar
+  72     W.prototype.n.QB                    →  Sprite.acts.Spawn
+  73     W.prototype.n.MC                    →  Sprite.acts.SetScale
+  74     H.prototype.n.bC                    →  system_object.acts.SetGroupActive
+  75     W.prototype.n.Gk                    →  Sprite.acts.SetVisible
+  76     Oc.prototype.n.Gk                   →  Spritefont2.acts.SetVisible
+  77     H.prototype.k.Vz                    →  system_object.cnds.Every
+  78     W.prototype.k.oB                    →  Sprite.cnds.PickDistance
+  79     H.prototype.A.QD                    →  system_object.exps.lerp
+  80     H.prototype.A.round                 →  system_object.exps.round
+  81     Cc.prototype.n.wB                   →  Audio.acts.PlayByName
+  82     H.prototype.A.Fv                    →  system_object.exps.choose
+  83     W.prototype.n.du                    →  Sprite.acts.AddInstanceVar
+  84     W.prototype.n.Hk                    →  Sprite.acts.SetWidth
+  85     Oc.prototype.n.Fk                   →  Spritefont2.acts.SetText
+  86     H.prototype.A.abs                   →  system_object.exps.abs
+  87     W.prototype.n.XC                    →  Sprite.acts.SubInstanceVar
+  88     W.prototype.n.Dk                    →  Sprite.acts.SetInstanceVar
+  89     H.prototype.k.nB                    →  system_object.cnds.PickByComparison
+  90     H.prototype.k.Aq                    →  system_object.cnds.ForEach
+  91     W.prototype.k.ou                    →  Sprite.cnds.IsBoolInstanceVarSet
+  92     W.prototype.k.Oq                    →  Sprite.cnds.PickByUID
+  93     zc.prototype.A.lB                   →  Function.exps.Param
+  94     H.prototype.n.Oz                    →  system_object.acts.CreateObject
+  95     H.prototype.A.random                →  system_object.exps.random
+  96     W.prototype.k.nn                    →  Sprite.cnds.CompareX
+  97     W.prototype.n.KA                    →  Sprite.acts.MoveAtAngle
+  98     W.prototype.A.GA                    →  Sprite.exps.LayerName
+  99     W.prototype.n.av                    →  Sprite.acts.SetAnim
+  100    H.prototype.k.cD                    →  system_object.cnds.TriggerOnce
+  101    H.prototype.A.u                     →  system_object.exps.angle
+  102    W.prototype.n.Dq                    →  Sprite.acts.MoveToTop
+  103    W.prototype.n.Gh                    →  Sprite.acts.SetSize
+  104    od.prototype.n.LC                   →  scrollto.acts.Shake
+  105    W.prototype.n.FC                    →  Sprite.acts.SetTowardPosition
+  106    jd.prototype.n.QC                   →  Timer.acts.StartTimer
+  107    jd.prototype.k.iB                   →  Timer.cnds.OnTimer
+  108    W.prototype.k.wA                    →  Sprite.cnds.IsOverlapping
+  109    W.prototype.n.un                    →  Sprite.acts.SetAngle
+  110    Nc.prototype.n.un                   →  Particles.acts.SetAngle
+  111    Cc.prototype.n.tB                   →  Audio.acts.PlayAtObjectByName
+  112    zc.prototype.k.Dz                   →  Function.cnds.CompareParam
+  113    bd.prototype.n.dD                   →  Pin.acts.Unpin
+  114    Cc.prototype.n.sB                   →  Audio.acts.PlayAtObject
+  115    Y.prototype.n.Ze                    →  Text.acts.Destroy
+  116    Y.prototype.n.xn                    →  Text.acts.SetY
+  117    Y.prototype.A.cf                    →  Text.exps.Y
+  118    Y.prototype.n.Fk                    →  Text.acts.SetText
+  119    Bc.prototype.A.oz                   →  Arr.exps.At
+  120    H.prototype.A.lG                    →  system_object.exps.newline
+  121    Zc.prototype.n.JC                   →  Fade.acts.SetWaitTime
+  122    H.prototype.n.jz                    →  system_object.acts.AddVar
+  123    H.prototype.k.EB                    →  system_object.cnds.Repeat
+  124    H.prototype.k.pB                    →  system_object.cnds.PickRandom
+  125    W.prototype.A.eu                    →  Sprite.exps.Angle
+  126    Vc.prototype.n.OB                   →  Bullet.acts.SetAngleOfMotion
+  127    W.prototype.A.Nz                    →  Sprite.exps.Count
+  128    H.prototype.n.JA                    →  system_object.acts.LoadState
+  129    Cc.prototype.n.RC                   →  Audio.acts.StopAll
+  130    Vc.prototype.n.pz                   →  Bullet.acts.Bounce
+  131    kd.prototype.n.iz                   →  Turret.acts.AddTarget
+  132    W.prototype.n.Xu                    →  Sprite.acts.SetEffectEnabled
+  133    H.prototype.n.kC                    →  system_object.acts.SetLayoutEffectParam
+  134    Bc.prototype.n.Ze                   →  Arr.acts.Destroy
+  135    Y.prototype.n.$u                    →  Text.acts.SetPosToObject
+  136    Kc.prototype.n.bA                   →  LocalStorage.acts.GetItem
+  137    W.prototype.n.Cq                    →  Sprite.acts.MoveToLayer
+  138    H.prototype.n.nC                    →  system_object.acts.SetLayerParallax
+  139    ad.prototype.n.hz                   →  LOS.acts.AddObstacle
+  140    Pc.prototype.n.Ze                   →  TextBox.acts.Destroy
+  141    Oc.prototype.n.Ze                   →  Spritefont2.acts.Destroy
+  142    H.prototype.k.mB                    →  system_object.cnds.PickAll
+  143    W.prototype.k.mA                    →  Sprite.cnds.IsAnimPlaying
+  144    Y.prototype.A.bf                    →  Text.exps.X
+  145    Y.prototype.A.zn                    →  Text.exps.UID
+  146    Kc.prototype.n.dC                   →  LocalStorage.acts.SetItem
+  147    Cc.prototype.n.zC                   →  Audio.acts.SetSilent
+  148    Cc.prototype.n.pC                   →  Audio.acts.SetMuted
+  149    H.prototype.n.hC                    →  system_object.acts.SetLayerVisible
+  150    H.prototype.A.eG                    →  system_object.exps.loopindex
+  151    W.prototype.A.zn                    →  Sprite.exps.UID
+  152    H.prototype.A.WF                    →  system_object.exps.layoutheight
+  153    Cc.prototype.n.lC                   →  Audio.acts.SetListenerObject
+  154    Bc.prototype.n.$i                   →  Arr.acts.SetX
+  155    Bc.prototype.k.Oq                   →  Arr.cnds.PickByUID
+  156    Qc.prototype.n.Hk                   →  TiledBg.acts.SetWidth
+  157    Qc.prototype.A.Ih                   →  TiledBg.exps.Width
+  158    W.prototype.A.Ih                    →  Sprite.exps.Width
+  159    W.prototype.n.oC                    →  Sprite.acts.SetMirrored
+  160    W.prototype.n.PB                    →  Sprite.acts.SetAnimSpeed
+  161    W.prototype.n.Vu                    →  Sprite.acts.SetBoolInstanceVar
+  162    H.prototype.n.jC                    →  system_object.acts.SetTimescale
+  163    W.prototype.n.Zu                    →  Sprite.acts.SetOpacity
+  164    H.prototype.k.Ju                    →  system_object.cnds.OnLoadComplete
+  165    H.prototype.n.EC                    →  system_object.acts.SetLayerForceOwnTexture
+  166    Qc.prototype.n.Ze                   →  TiledBg.acts.Destroy
+  167    Zc.prototype.n.PC                   →  Fade.acts.StartFade
+  168    Zc.prototype.n.XB                   →  Fade.acts.SetFadeInTime
+  169    W.prototype.n.wn                    →  Sprite.acts.SetHeight
+  170    Qc.prototype.n.$i                   →  TiledBg.acts.SetX
+  171    Qc.prototype.n.xn                   →  TiledBg.acts.SetY
+  172    Qc.prototype.n.wn                   →  TiledBg.acts.SetHeight
+  173    Vc.prototype.n.Hh                   →  Bullet.acts.SetSpeed
+  174    Vc.prototype.n.od                   →  Bullet.acts.SetEnabled
+  175    H.prototype.n.fC                    →  system_object.acts.SubVar
+  176    Kc.prototype.k.Cu                   →  LocalStorage.cnds.OnItemGet
+  177    Kc.prototype.A.BA                   →  LocalStorage.exps.ItemValue
+  178    W.prototype.k.TA                    →  Sprite.cnds.OnCollision
+  179    H.prototype.A.WG                    →  system_object.exps.rgb
+  180    Rc.prototype.A.bf                   →  Tilemap.exps.X
+  181    Rc.prototype.A.cf                   →  Tilemap.exps.Y
+  182    Cc.prototype.n.yn                   →  Audio.acts.Stop
+  183    Cc.prototype.n.Play                 →  Audio.acts.Play
+  184    Rc.prototype.n.Ze                   →  Tilemap.acts.Destroy
+  185    W.prototype.k.iu                    →  Sprite.cnds.CompareY
+  186    zc.prototype.A.KB                   →  Function.exps.ReturnValue
+  187    xc.prototype.n.od                   →  solid.acts.SetEnabled
+  188    W.prototype.k.Fh                    →  Sprite.cnds.OnCreated
+  189    Rc.prototype.n.Gh                   →  Tilemap.acts.SetSize
+  190    Qc.prototype.n.Gh                   →  TiledBg.acts.SetSize
+  191    Qc.prototype.n.Bq                   →  TiledBg.acts.MoveToBottom
+  192    Rc.prototype.n.CC                   →  Tilemap.acts.SetTile
+  193    ad.prototype.k.hA                   →  LOS.cnds.HasLOSToPosition
+  194    cd.prototype.n.Hh                   →  Rotate.acts.SetSpeed
+  195    W.prototype.k.su                    →  Sprite.cnds.IsCollisionEnabled
+  196    W.prototype.k.Cz                    →  Sprite.cnds.CompareOpacity
+  197    W.prototype.n.SB                    →  Sprite.acts.SetCollisions
+  198    Bc.prototype.A.Ih                   →  Arr.exps.Width
+  199    Bc.prototype.n.KC                   →  Arr.acts.SetXY
+  200    Rc.prototype.A.zn                   →  Tilemap.exps.UID
+  201    Rc.prototype.k.Oq                   →  Tilemap.cnds.PickByUID
+  202    Rc.prototype.n.DC                   →  Tilemap.acts.SetTileRange
+  203    Bc.prototype.k.Kz                   →  Arr.cnds.CompareXY
+  204    H.prototype.A.floor                 →  system_object.exps.floor
+  205    Rc.prototype.k.Gz                   →  Tilemap.cnds.CompareTileAt
+  206    Rc.prototype.n.Uz                   →  Tilemap.acts.EraseTileRange
+  207    Zc.prototype.n.YB                   →  Fade.acts.SetFadeOutTime
+  208    W.prototype.n.vn                    →  Sprite.acts.SetEffectParam
+  209    Rc.prototype.k.Ui                   →  Tilemap.cnds.CompareInstanceVar
+  210    Bc.prototype.n.Gh                   →  Arr.acts.SetSize
+  211    Bc.prototype.n.yq                   →  Arr.acts.Clear
+  212    Y.prototype.n.Dq                    →  Text.acts.MoveToTop
+  213    Qc.prototype.n.un                   →  TiledBg.acts.SetAngle
+  214    H.prototype.k.gD                    →  system_object.cnds.While
+  215    H.prototype.n.YC                    →  system_object.acts.RestartLayout
+  216    Bc.prototype.k.nz                   →  Arr.cnds.ArrForEach
+  217    Bc.prototype.A.Qz                   →  Arr.exps.CurX
+  218    Bc.prototype.A.Rz                   →  Arr.exps.CurY
+  219    Bc.prototype.k.zz                   →  Arr.cnds.CompareCurrent
+  220    Rc.prototype.A.yB                   →  Tilemap.exps.PositionToTileX
+  221    Rc.prototype.A.zB                   →  Tilemap.exps.PositionToTileY
+  222    Bc.prototype.A.lA                   →  Arr.exps.IndexOf
+  223    H.prototype.k.$z                    →  system_object.cnds.ForEachOrdered
+  224    Kc.prototype.n.qz                   →  LocalStorage.acts.CheckItemExists
+  225    Kc.prototype.k.Bu                   →  LocalStorage.cnds.OnItemExists
+  226    Kc.prototype.k.Du                   →  LocalStorage.cnds.OnItemMissing
+  227    Sc.prototype.k.Su                   →  Touch.cnds.OnTapGestureObject
+  228    Nc.prototype.A.bf                   →  Particles.exps.X
+  229    Nc.prototype.A.cf                   →  Particles.exps.Y
+  230    Nc.prototype.n.xC                   →  Particles.acts.SetRate
+  231    Y.prototype.n.Zu                    →  Text.acts.SetOpacity
+  232    Y.prototype.n.Hk                    →  Text.acts.SetWidth
+  233    Y.prototype.A.dv                    →  Text.exps.TextWidth
+  234    Y.prototype.n.$i                    →  Text.acts.SetX
+  235    Y.prototype.A.Ih                    →  Text.exps.Width
+  236    Y.prototype.A.Text                  →  Text.exps.Text
+  237    H.prototype.A["int"]                →  system_object.exps.int
+  238    H.prototype.A.sH                    →  system_object.exps.tokenat
+  239    Yc.prototype.n.Rq                   →  EightDir.acts.SimulateControl
+  240    Yc.prototype.n.yn                   →  EightDir.acts.Stop
+  241    Y.prototype.n.fu                    →  Text.acts.AppendText
+  242    Yc.prototype.n.od                   →  EightDir.acts.SetEnabled
+  243    ad.prototype.n.TB                   →  LOS.acts.SetCone
+  244    $c.prototype.n.Zz                   →  Flash.acts.Flash
+  245    $c.prototype.n.TC                   →  Flash.acts.StopFlashing
+  246    Y.prototype.k.Ui                    →  Text.cnds.CompareInstanceVar
+  247    H.prototype.A.ceil                  →  system_object.exps.ceil
+  248    W.prototype.k.Jz                    →  Sprite.cnds.CompareWidth
+  249    Oc.prototype.n.vn                   →  Spritefont2.acts.SetEffectParam
+  250    W.prototype.n.SC                    →  Sprite.acts.StopAnim
+  251    jd.prototype.n.UC                   →  Timer.acts.StopTimer
+  252    Yc.prototype.k.pu                   →  EightDir.cnds.IsMoving
+  253    Yc.prototype.n.Pq                   →  EightDir.acts.SetMaxSpeed
+  254    W.prototype.k.nu                    →  Sprite.cnds.IsBetweenAngles
+  255    W.prototype.k.wq                    →  Sprite.cnds.AngleWithin
+  256    Vc.prototype.k.Hz                   →  Bullet.cnds.CompareTravelled
+  257    Yc.prototype.n.HC                   →  EightDir.acts.SetVectorX
+  258    Yc.prototype.n.IC                   →  EightDir.acts.SetVectorY
+  259    Yc.prototype.n.Hh                   →  EightDir.acts.SetSpeed
+  260    Cc.prototype.n.uB                   →  Audio.acts.PlayAtPosition
+  261    Vc.prototype.k.ln                   →  Bullet.cnds.CompareSpeed
+  262    Zc.prototype.n.IB                   →  Fade.acts.RestartFade
+  263    W.prototype.n.RB                    →  Sprite.acts.SetAnimFrame
+  264    W.prototype.n.OC                    →  Sprite.acts.StartAnim
+  265    Wc.prototype.k.ln                   →  Car.cnds.CompareSpeed
+  266    ad.prototype.k.gA                   →  LOS.cnds.HasLOSToObject
+  267    H.prototype.k.wq                    →  system_object.cnds.AngleWithin
+  268    W.prototype.k.AA                    →  Sprite.cnds.IsVisible
+  269    dd.prototype.n.sC                   →  Sin.acts.SetPeriod
+  270    dd.prototype.A.eD                   →  Sin.exps.Value
+  271    Vc.prototype.A.kz                   →  Bullet.exps.AngleOfMotion
+  272    zc.prototype.n.yC                   →  Function.acts.SetReturnValue
+  273    Sc.prototype.k.Mq                   →  Touch.cnds.OnTouchObject
+  274    Sc.prototype.k.zA                   →  Touch.cnds.IsTouchingObject
+  275    dd.prototype.n.tC                   →  Sin.acts.SetPhase
+  276    dd.prototype.n.NB                   →  Sin.acts.SetActive
+  277    Qc.prototype.A.bf                   →  TiledBg.exps.X
+  278    H.prototype.n.JB                    →  system_object.acts.SaveState
+  279    jd.prototype.A.ju                   →  Timer.exps.CurrentTime
+  280    Vc.prototype.n.Ck                   →  Bullet.acts.SetAcceleration
+  281    Sc.prototype.k.Ru                   →  Touch.cnds.OnTapGesture
+  282    Sc.prototype.A.bf                   →  Touch.exps.X
+  283    Sc.prototype.A.cf                   →  Touch.exps.Y
+  284    Bc.prototype.k.Mz                   →  Arr.cnds.Contains
+  285    Bc.prototype.k.nn                   →  Arr.cnds.CompareX
+  286    Cc.prototype.k.yA                   →  Audio.cnds.IsTagPlaying
+  287    Nc.prototype.k.Ui                   →  Particles.cnds.CompareInstanceVar
+  288    Kc.prototype.n.uz                   →  LocalStorage.acts.ClearStorage
+  289    Dc.prototype.n.Xz                   →  Browser.acts.ExecJs
+  290    Dc.prototype.n.CB                   →  Browser.acts.Reload
+  291    W.prototype.A.mz                    →  Sprite.exps.AnimationFrame
+  292    Y.prototype.n.Gk                    →  Text.acts.SetVisible
+  293    Bc.prototype.k.Fz                   →  Arr.cnds.CompareSize
+  294    Dc.prototype.n.Lz                   →  Browser.acts.ConsoleLog
+  295    H.prototype.A.oH                    →  system_object.exps.str
+  296    W.prototype.k.wu                    →  Sprite.cnds.OnDestroyed
+  297    Dc.prototype.k.Mu                   →  Browser.cnds.OnPageHidden
+  298    Qc.prototype.k.pn                   →  TiledBg.cnds.IsOnScreen
+  299    Cc.prototype.k.Bk                   →  Audio.cnds.OnEnded
+  300    Cc.prototype.n.vB                   →  Audio.acts.PlayAtPositionByName
+  301    Nc.prototype.n.Ze                   →  Particles.acts.Destroy
+  302    Wc.prototype.n.Hh                   →  Car.acts.SetSpeed
+  303    Wc.prototype.A.Ik                   →  Car.exps.Speed
+  304    kd.prototype.n.vz                   →  Turret.acts.ClearTargets
+  305    Fc.prototype.k.sA                   →  Keyboard.cnds.IsKeyDown
+  306    Wc.prototype.n.Rq                   →  Car.acts.SimulateControl
+  307    Wc.prototype.n.Wu                   →  Car.acts.SetDeceleration
+  308    Wc.prototype.n.Ck                   →  Car.acts.SetAcceleration
+  309    Wc.prototype.n.WB                   →  Car.acts.SetDriftRecover
+  310    Wc.prototype.n.BC                   →  Car.acts.SetSteerSpeed
+  311    Wc.prototype.n.Pq                   →  Car.acts.SetMaxSpeed
+  312    W.prototype.k.Bz                    →  Sprite.cnds.CompareHeight
+  313    Cc.prototype.n.uC                   →  Audio.acts.SetPlaybackRate
+  314    Wc.prototype.A.qu                   →  Car.exps.MaxSpeed
+  315    Nc.prototype.n.cC                   →  Particles.acts.SetInitSpeed
+  316    Nc.prototype.n.qC                   →  Particles.acts.SetParticleAcc
+  317    W.prototype.n.jD                    →  Sprite.acts.ZMoveToObject
+  318    Nc.prototype.A.eu                   →  Particles.exps.Angle
+  319    Nc.prototype.n.Dk                   →  Particles.acts.SetInstanceVar
+  320    Ec.prototype.n.eC                   →  Dictionary.acts.SetKey
+  321    Xc.prototype.n.Tz                   →  DragnDrop.acts.Drop
+  322    Y.prototype.k.ou                    →  Text.cnds.IsBoolInstanceVarSet
+  323    Ec.prototype.k.fA                   →  Dictionary.cnds.HasKey
+  324    Ec.prototype.A.aA                   →  Dictionary.exps.Get
+  325    kd.prototype.n.od                   →  Turret.acts.SetEnabled
+  326    H.prototype.A.BH                    →  system_object.exps.wallclocktime
+  327    Y.prototype.n.un                    →  Text.acts.SetAngle
+  328    Qc.prototype.k.Ui                   →  TiledBg.cnds.CompareInstanceVar
+  329    Y.prototype.n.ZB                    →  Text.acts.SetFontColor
+  330    ad.prototype.n.Qq                   →  LOS.acts.SetRange
+  331    Y.prototype.n.Cq                    →  Text.acts.MoveToLayer
+  332    H.prototype.A.dH                    →  system_object.exps.scrollx
+  333    H.prototype.A.eH                    →  system_object.exps.scrolly
+  334    Y.prototype.k.mn                    →  Text.cnds.CompareText
+  335    Y.prototype.n.wn                    →  Text.acts.SetHeight
+  336    Y.prototype.n.aC                    →  Text.acts.SetFontSize
+  337    zc.prototype.A.gu                   →  Function.exps.Call
+  338    jd.prototype.A.$C                   →  Timer.exps.TotalTime
+  339    bd.prototype.k.xA                   →  Pin.cnds.IsPinned
+  340    jd.prototype.A.ku                   →  Timer.exps.Duration
+  341    Cc.prototype.n.mC                   →  Audio.acts.SetMasterVolume
+  342    H.prototype.A.min                   →  system_object.exps.min
+  343    Mc.prototype.n.Gh                   →  NinePatch.acts.SetSize
+  344    Y.prototype.n.Gh                    →  Text.acts.SetSize
+  345    Y.prototype.A.Wi                    →  Text.exps.Height
+  346    Qc.prototype.n.Ek                   →  TiledBg.acts.SetPos
+  347    Dc.prototype.n.wz                   →  Browser.acts.Close
+  348    H.prototype.n.LB                    →  system_object.acts.SetMinimumFramerate
+  349    Qc.prototype.A.cf                   →  TiledBg.exps.Y
+  350    Y.prototype.n.Dk                    →  Text.acts.SetInstanceVar
+  351    Mc.prototype.k.Ui                   →  NinePatch.cnds.CompareInstanceVar
+  352    Mc.prototype.n.Dq                   →  NinePatch.acts.MoveToTop
+  353    Mc.prototype.n.vn                   →  NinePatch.acts.SetEffectParam
+  354    Mc.prototype.n.Bq                   →  NinePatch.acts.MoveToBottom
+  355    Mc.prototype.n.Ze                   →  NinePatch.acts.Destroy
+  356    Mc.prototype.n.Dk                   →  NinePatch.acts.SetInstanceVar
+  357    Mc.prototype.n.xn                   →  NinePatch.acts.SetY
+  358    Mc.prototype.A.cf                   →  NinePatch.exps.Y
+  359    Mc.prototype.A.bf                   →  NinePatch.exps.X
+  360    kd.prototype.n.Qq                   →  Turret.acts.SetRange
+  361    W.prototype.A.lz                    →  Sprite.exps.AnimationName
+  362    Bc.prototype.n.Dk                   →  Arr.acts.SetInstanceVar
+  363    Bc.prototype.A.zn                   →  Arr.exps.UID
+  364    Xc.prototype.k.pA                   →  DragnDrop.cnds.IsDragging
+  365    Y.prototype.A.Yz                    →  Text.exps.FaceSize
+  366    Bc.prototype.n.BB                   →  Arr.acts.Push
+  367    Lc.prototype.k.vA                   →  Mouse.cnds.IsOverObject
+  368    Lc.prototype.k.Eq                   →  Mouse.cnds.OnClick
+  369    Sc.prototype.k.Nq                   →  Touch.cnds.OnTouchStart
+  370    Bc.prototype.n.xB                   →  Arr.acts.Pop
+  371    Bc.prototype.A.Pz                   →  Arr.exps.CurValue
+  372    Sc.prototype.k.Iq                   →  Touch.cnds.OnNthTouchEnd
+  373    Sc.prototype.k.rA                   →  Touch.cnds.IsInTouch
+  374    Sc.prototype.A.bD                   →  Touch.exps.TouchIndex
+  375    Xc.prototype.k.zu                   →  DragnDrop.cnds.OnDrop
+  376    Xc.prototype.k.yu                   →  DragnDrop.cnds.OnDragStart
+  377    Sc.prototype.A.aD                   →  Touch.exps.TouchID
+  378    Sc.prototype.A.hD                   →  Touch.exps.XForID
+  379    Sc.prototype.A.iD                   →  Touch.exps.YForID
+  380    H.prototype.k.Wz                    →  system_object.cnds.EveryTick
+  381    W.prototype.A.qB                    →  Sprite.exps.PickedCount
+  382    Sc.prototype.k.xu                   →  Touch.cnds.OnDoubleTapGestureObject
+  383    Y.prototype.n.du                    →  Text.acts.AddInstanceVar
+  384    Y.prototype.n.Xu                    →  Text.acts.SetEffectEnabled
+  385    Y.prototype.n.Vu                    →  Text.acts.SetBoolInstanceVar
+  386    Y.prototype.n.vn                    →  Text.acts.SetEffectParam
+  387    Zc.prototype.k.Uu                   →  Fade.cnds.OnWaitEnd
+  388    Zc.prototype.k.Au                   →  Fade.cnds.OnFadeInEnd
+  389    H.prototype.A.left                  →  system_object.exps.left
+  390    kd.prototype.n.vC                   →  Turret.acts.SetPredictiveAim
+  391    kd.prototype.n.wC                   →  Turret.acts.SetProjectileSpeed
+  392    kd.prototype.k.iA                   →  Turret.cnds.HasTarget
+  393    kd.prototype.k.Lq                   →  Turret.cnds.OnTargetAcquired
+  394    kd.prototype.A.ZC                   →  Turret.exps.TargetUID
+  395    W.prototype.k.tA                    →  Sprite.cnds.IsOnLayer
+  396    W.prototype.k.uA                    →  Sprite.cnds.IsOutsideLayout
+  397    Nc.prototype.n.AC                   →  Particles.acts.SetSpeedRandomiser
+  398    Cc.prototype.n.rC                   →  Audio.acts.SetPaused
+  399    H.prototype.n.gC                    →  system_object.acts.SetLayerOpacity
+  400    H.prototype.A.VF                    →  system_object.exps.layerscale
+  401    Vc.prototype.A.Ik                   →  Bullet.exps.Speed
+  402    Yc.prototype.A.ru                   →  EightDir.exps.MovingAngle
+  403    H.prototype.n.cA                    →  system_object.acts.GoToLayout
+  404    H.prototype.k.sn                    →  system_object.cnds.OnSaveComplete
+  405    Kc.prototype.k.hu                   →  LocalStorage.cnds.CompareValue
+  406    Fc.prototype.k.uu                   →  Keyboard.cnds.OnKey
+  407    Fc.prototype.A.VC                   →  Keyboard.exps.StringFromKeyCode
+  408    Fc.prototype.A.FA                   →  Keyboard.exps.LastKeyCode
+  409    H.prototype.A.right                 →  system_object.exps.right
+  410    H.prototype.A.YF                    →  system_object.exps.layoutwidth
+  411    Kc.prototype.n.DB                   →  LocalStorage.acts.RemoveItem
+  412    Y.prototype.n.$B                    →  Text.acts.SetFontFace
+  413    Ec.prototype.n.gz                   →  Dictionary.acts.AddKey
+  414    Mc.prototype.n.Ek                   →  NinePatch.acts.SetPos
+  415    Mc.prototype.n.Hk                   →  NinePatch.acts.SetWidth
+  416    Mc.prototype.k.pn                   →  NinePatch.cnds.IsOnScreen
+  417    Mc.prototype.n.wn                   →  NinePatch.acts.SetHeight
+  418    Y.prototype.A.cv                    →  Text.exps.TextHeight
+  419    Mc.prototype.n.Cq                   →  NinePatch.acts.MoveToLayer
+  420    Ac.prototype.n.HB                   →  AJAX.acts.RequestFile
+  421    Dc.prototype.n.dA                   →  Browser.acts.GoToURL
+  422    Gc.prototype.n.Ek                   →  List.acts.SetPos
+  423    Gc.prototype.A.bf                   →  List.exps.X
+  424    Gc.prototype.A.Ih                   →  List.exps.Width
+  425    Gc.prototype.A.cf                   →  List.exps.Y
+  426    Gc.prototype.A.Wi                   →  List.exps.Height
+  427    Gc.prototype.n.fz                   →  List.acts.AddItem
+  428    Gc.prototype.n.MB                   →  List.acts.Select
+  429    Gc.prototype.n.Ze                   →  List.acts.Destroy
+  430    Pc.prototype.n.Yu                   →  TextBox.acts.SetFocus
+  431    Gc.prototype.k.Qu                   →  List.cnds.OnSelectionChanged
+  432    Gc.prototype.k.Ez                   →  List.cnds.CompareSelection
+  433    Mc.prototype.k.nn                   →  NinePatch.cnds.CompareX
+  434    Mc.prototype.n.$i                   →  NinePatch.acts.SetX
+  435    Mc.prototype.A.Ih                   →  NinePatch.exps.Width
+  436    Mc.prototype.k.iu                   →  NinePatch.cnds.CompareY
+  437    Mc.prototype.A.Wi                   →  NinePatch.exps.Height
+  438    H.prototype.A.$F                    →  system_object.exps.clamp
+  439    Ac.prototype.k.Yi                   →  AJAX.cnds.OnComplete
+  440    Tc.prototype.n.HA                   →  XML.acts.Load
+  441    Ac.prototype.A.EA                   →  AJAX.exps.LastData
+  442    Tc.prototype.k.Aq                   →  XML.cnds.ForEach
+  443    Tc.prototype.A.WC                   →  XML.exps.StringValue
+  444    Kc.prototype.k.Eu                   →  LocalStorage.cnds.OnItemSet
+  445    Pc.prototype.A.Text                 →  TextBox.exps.Text
+  446    Pc.prototype.k.pn                   →  TextBox.cnds.IsOnScreen
+  447    Dc.prototype.k.oA                   →  Browser.cnds.IsDownloadingUpdate
+  448    Pc.prototype.n.Fk                   →  TextBox.acts.SetText
+  449    Ac.prototype.n.GB                   →  AJAX.acts.Request
+  450    Ac.prototype.k.Ed                   →  AJAX.cnds.OnError
+  451    Ac.prototype.n.AB                   →  AJAX.acts.Post
+  452    H.prototype.A.ZF                    →  system_object.exps.len
+  453    Fc.prototype.k.Fu                   →  Keyboard.cnds.OnAnyKey
+  454    Dc.prototype.n.eA                   →  Browser.acts.GoToURLWindow
+  455    Pc.prototype.k.mn                   →  TextBox.cnds.CompareText
+  456    Lc.prototype.k.Jq                   →  Mouse.cnds.OnObjectClicked
+  457    Ac.prototype.n.bv                   →  AJAX.acts.SetTimeout
+  458    H.prototype.A.find                  →  system_object.exps.find
+  459    Lc.prototype.n.UB                   →  Mouse.acts.SetCursor
+  460    Dc.prototype.k.tn                   →  Browser.cnds.OnUpdateReady
+  461    Lc.prototype.k.tu                   →  Mouse.cnds.OnWheel
+  462    H.prototype.k.Hq                    →  system_object.cnds.OnLoadFinished
+  463    Qc.prototype.A.Wi                   →  TiledBg.exps.Height
+  464    Dc.prototype.A.DA                   →  Browser.exps.Language
+  465    H.prototype.A.Ml                    →  system_object.exps.loadingprogress
+  466    Vc.prototype.n.VB                   →  Bullet.acts.SetDistanceTravelled
+  467    Dc.prototype.k.Nu                   →  Browser.cnds.OnPageVisible
+  468    H.prototype.k.Kq                    →  system_object.cnds.OnSaveFailed
+
+
+################################################################################
+##                                                                            ##
+##  PART J — SHARED ACE METHODS                                               ##
+##                                                                            ##
+################################################################################
+
+================================================================================
+SECTION 32: Common ACE Methods (shared across world plugins)
+================================================================================
+
+Dynamically applied to ALL world-type plugin prototypes.
+
+--- Common Conditions (cnds) ---
+  .Ui           → .CompareInstanceVar    Compare instance variable
+  .ou           → .IsBoolInstanceVarSet  Boolean var check
+  .nn           → .CompareX              Compare X position
+  .iu           → .CompareY              Compare Y position
+  .pn           → .IsOnScreen            Visible on screen
+  .Oq           → .PickByUID             Pick by unique ID
+  .mn           → .CompareText           Compare text (Text/TextBox)
+  .wA           → .IsOverlapping         Collision overlap
+  .TA           → .OnCollision           On collision event
+  .Fh           → .OnCreated             On instance created
+  .wu           → .OnDestroyed           On instance destroyed
+  .mA           → .IsAnimPlaying         Animation playing (Sprite)
+  .AA           → .IsVisible             Is visible
+  .tA           → .IsOnLayer             Is on specific layer
+  .uA           → .IsOutsideLayout       Outside layout bounds
+  .su           → .IsCollisionEnabled    Collision enabled flag
+  .Cz           → .CompareOpacity        Compare opacity
+  .Jz           → .CompareWidth          Compare width
+  .Bz           → .CompareHeight         Compare height
+  .Az           → .CompareFrame          Compare animation frame
+  .nu           → .IsBetweenAngles       Angle in range
+  .wq           → .AngleWithin           Angle within tolerance
+  .oB           → .PickDistance           Pick by distance
+
+--- Common Actions (acts) ---
+  .Ek           → .SetPos                Set X,Y position
+  .$i           → .SetX                  Set X position
+  .xn           → .SetY                  Set Y position
+  .Hk           → .SetWidth              Set width
+  .wn           → .SetHeight             Set height
+  .Gh           → .SetSize               Set width + height
+  .un           → .SetAngle              Set angle
+  .Dq           → .MoveToTop             Move to top of Z-order
+  .Bq           → .MoveToBottom          Move to bottom of Z-order
+  .Ze           → .Destroy               Destroy instance
+  .Gk           → .SetVisible            Set visibility
+  .Dk           → .SetInstanceVar        Set instance variable
+  .du           → .AddInstanceVar        Add to instance variable
+  .XC           → .SubInstanceVar        Subtract from instance var
+  .Vu           → .SetBoolInstanceVar    Set boolean instance var
+  .$u           → .SetPosToObject        Set pos to another object
+  .Zu           → .SetOpacity            Set opacity
+  .Cq           → .MoveToLayer           Move to layer
+  .Xu           → .SetEffectEnabled      Enable/disable effect
+  .vn           → .SetEffectParam        Set effect parameter
+  .MC           → .SetScale              Set scale
+  .oC           → .SetMirrored           Set mirrored
+  .SB           → .SetCollisions         Set collision enabled
+  .Fk           → .SetText               Set text content
+  .QB           → .Spawn                 Spawn instance (Sprite)
+  .KA           → .MoveAtAngle           Move at angle (Sprite)
+  .FC           → .SetTowardPosition     Face toward position
+  .av           → .SetAnim               Set animation (Sprite)
+  .PB           → .SetAnimSpeed          Set animation speed
+  .RB           → .SetAnimFrame          Set animation frame
+  .OC           → .StartAnim             Start animation
+  .SC           → .StopAnim              Stop animation
+  .jD           → .ZMoveToObject         Z-move to object
+
+--- Common Expressions (exps) ---
+  .bf           → .X                     Get X position
+  .cf           → .Y                     Get Y position
+  .Ih           → .Width                 Get width
+  .Wi           → .Height                Get height
+  .zn           → .UID                   Get unique ID
+  .eu           → .Angle                 Get angle
+  .jA           → .ImagePointX           Get image point X (Sprite)
+  .kA           → .ImagePointY           Get image point Y (Sprite)
+  .GA           → .LayerName             Get layer name
+  .Nz           → .Count                 Get count
+  .lz           → .AnimationName         Get animation name
+  .mz           → .AnimationFrame        Get animation frame
+  .qB           → .PickedCount           Get picked count
+
+--- Common Behavior Methods ---
+  .Hh           → .SetSpeed              Set speed
+  .od           → .SetEnabled            Set enabled
+  .Ck           → .SetAcceleration       Set acceleration
+  .Rq           → .SimulateControl       Simulate input
+  .Pq           → .SetMaxSpeed           Set max speed
+  .Ik           → .Speed                 Get speed (expression)
+  .ln           → .CompareSpeed          Compare speed (condition)
+  .Qq           → .SetRange              Set range
+
+
+################################################################################
+##                                                                            ##
+##  PART K — SHADER EFFECTS & WINDOW GLOBALS                                  ##
+##                                                                            ##
+################################################################################
+
+================================================================================
+SECTION 33: Shader Effect Object (vc / cr.shaders)
+================================================================================
+
+Shader effect definitions stored at line ~8229 (obfuscated).
+
+--- Property Mapping ---
+  Obfuscated  →  Unobfuscated            Description
+  ----------     ----------------------  ---------------------------------
+  .src          → .src                   Fragment shader GLSL source
+  .Tf           → .extendBoxHorizontal   Horizontal bbox extension (pixels)
+  .Uf           → .extendBoxVertical     Vertical bbox extension (pixels)
+  .Tg           → .crossSampling         Uses back-buffer sampling
+  .Pc           → .preservesOpaqueness   Preserves alpha channel
+  .Lg           → .animated              Shader is animated (re-render each frame)
+  .ea           → .parameters            Uniform param array: [[name, min, max],...]
+
+--- Available Effects ---
+  Effect Name    .Tg    .Pc    .Lg    Parameters
+  -----------    ----   ----   ----   ----------
+  grayscale      false  true   false  [intensity: 0–1]
+  hsladjust      false  true   false  [huerotate: 0–1, satadjust: 0–1, lumadjust: 0–1]
+  outline        false  false  false  [red, green, blue, width, justoutline]
+  overlay        true   false  false  (none — uses back buffer)
+  setcolor       false  true   false  [red: 0–1, green: 0–1, blue: 0–1]
+  tint           false  true   false  [red: 0–1, green: 0–1, blue: 0–1]
+
+================================================================================
+SECTION 34: Window Global Assignments
+================================================================================
+
+  window.cr_createRuntime = ac        → Create runtime from canvas ID
+  window.cr_createDCRuntime = bc      → Create DC runtime (w,h)
+  window.createCocoonJSRuntime        → CocoonJS entry point
+  window.createEjectaRuntime          → Ejecta entry point
+  window.cr_getC2Runtime              → Get runtime from DOM canvas
+  window.cr_getSnapshot(fmt,cb)       → Take canvas screenshot
+  window.cr_sizeCanvas(w,h)           → Resize canvas
+  window.cr_setSuspended(flag)        → Pause/resume game
+  window._c2hh_                       → License hash (line 5936)
+  window.C2_AJAX_DCSide               → AJAX DC-side handler (line 8347)
+  window.c2OnAudioMicStream           → Audio microphone callback
+  window.c2_callFunction              → External function call API
+
+
+################################################################################
+##                                                                            ##
+##  PART L — QUICK REFERENCE / CHEAT SHEET                                    ##
+##                                                                            ##
+################################################################################
+
+================================================================================
+SECTION 35: Modding Quick Reference
+================================================================================
+
+--- How to call a system action from obfuscated code ---
+  Example: Set a variable
+    H.prototype.n.GC(...)             // system_object.acts.SetVar
+
+--- How to read/write instance properties ---
+  inst.x, inst.y                      // position (same name)
+  inst.width, inst.height             // size (same name)
+  inst.u                              // angle (cr: inst.angle)
+  inst.visible                        // visibility (same name)
+  inst.opacity                        // opacity (same name)
+  inst.B                              // properties array (cr: inst.properties)
+  inst.cc                             // instance_vars (cr: inst.instance_vars)
+  inst.C                              // layer ref (cr: inst.layer)
+  inst.ka                             // bbox (cr: inst.bbox)
+  inst.P()                            // mark bbox changed (cr: inst.set_bbox_changed())
+
+--- How to get runtime references ---
+  var rt = window.cr_getC2Runtime();  // get runtime
+  rt.wa                               // current layout (cr: rt.running_layout)
+  rt.wa.ua                            // layers array (cr: rt.running_layout.layers)
+  rt.wa.ua[0].q                       // layer 0 instances (cr: ...layers[0].instances)
+  rt.S                                // types_by_index
+  rt.S[i].q                           // all instances of type i
+  rt.jg                               // objectsByUid map
+  rt.jg[uid]                          // get instance by UID
+
+--- How to trigger events ---
+  rt.trigger(H.prototype.k.METHOD, inst, type)
+
+--- How to create instances ---
+  rt.Ut(type, layer, x, y, createRow)  // createInstance
+
+--- How to change layout ---
+  rt.Mh = rt.qb[layoutIndex]           // set changelayout
+
+--- How to access plugin methods ---
+  // Get the objectRefTable entry
+  var ref = rt.ya(index);              // GetObjectReference
+  // Or directly: rt.wy[index]
+
+--- Key class reference ---
+  oc = cr                              // namespace
+  H  = cr.system_object                // system object
+  W  = cr.plugins_.Sprite              // Sprite plugin
+  Y  = cr.plugins_.Text                // Text plugin
+  Cc = cr.plugins_.Audio               // Audio plugin
+  Rc = cr.plugins_.Tilemap             // Tilemap plugin
+  Nc = cr.plugins_.Particles           // Particles plugin
+  Vc = cr.behaviors.Bullet             // Bullet behavior
+  Yc = cr.behaviors.EightDir           // 8-dir movement
+  Wc = cr.behaviors.Car                // Car movement
+  bd = cr.behaviors.Pin                // Pin behavior
+
+================================================================================
+END OF COMPLETE OBFUSCATION MAP
+================================================================================
