@@ -5,20 +5,34 @@
 
   PURPOSE: 2.3.3 is minified with the same scheme, but NOT with the same
            letters throughout. This file records what was re-tested against a
-           running 2.3.3 build, what still holds, what does NOT, and five
-           identifiers the original map does not contain.
+           running 2.3.3 build, what still holds, what does NOT, and the
+           identifiers the main map does not contain.
 
   METHOD:  every line below was checked by booting 2.3.3 in a headless browser
-           and reading, calling, or diffing the live object. Nothing here is
-           carried over from the 1.9.6 document on trust. Where a claim is
-           proven by observing an effect, it says PROVEN.
+           and reading, calling, or diffing the live object, or by reading the
+           minified function BODY and matching it against the named
+           implementation in an unobfuscated build. Nothing here is carried over
+           from the 1.9.6 document on trust.
+
+  ------------------------------------------------------------------------------
+  READ THIS FIRST, IT WILL SAVE YOU A DAY
+  ------------------------------------------------------------------------------
+
+  Do not verify a mapping with `typeof rt.xx === "function"`. It passes for ANY
+  function. Five of the six runtime METHOD names in the main map resolve to real
+  functions on 2.3.3 that do something completely different, so the call
+  succeeds, returns a plausible value, and corrupts your state quietly.
+
+  PROPERTY names from the main map held up well on 2.3.3 — those can be checked
+  by SHAPE (is it an array of types? an object of groups?), which is a real test.
+  METHOD names cannot, and must be checked by body.
 
 ================================================================================
 
-SECTION A1: WHAT STILL HOLDS IN 2.3.3
+SECTION A1: WHAT STILL HOLDS IN 2.3.3 (properties)
 ================================================================================
 
-  20 of 21 spot-checked runtime claims from the main map verified unchanged:
+  Verified by shape against a running build:
 
   Obfuscated  →  Unobfuscated                 Checked by
   ----------     --------------------------   --------------------------------
@@ -26,142 +40,195 @@ SECTION A1: WHAT STILL HOLDS IN 2.3.3
   rt.wa       →  .running_layout              .name readable
   rt.wa.ua    →  .layers                      array
   layer.q     →  .instances                   array; layer .name survives
+  layer.Ba    →  .sid
   type.q      →  .instances                   array
   type.pb     →  .families                    array
   type.R      →  .is_family                   boolean
+  type.qd     →  .animations                  array
+  type.qb     →  .behaviors                   array
   rt.jg       →  .objectsByUid                object
   rt.wj       →  .groups_by_name              object
   rt.Qh       →  .deathRow                    present
   rt.X        →  .redraw                      boolean
   rt.ip       →  .fps                         number
-  rt.Ut()     →  .createInstance()            function
-  rt.bh()     →  .DestroyInstance()           function
-  rt.CA()     →  .ClearDeathRow()             function
-  rt.Tt()     →  .getObjectByUID()            function
-  rt.mr()     →  .getLayerByName()             function
-  rt.aG()     →  .loadFromJSONString()        function
-  rt.fF()     →  .saveInstanceToJSON()        function
-  rt.$o()     →  .restoreInstanceData()       function
+  rt.Ce       →  .createRow
+  rt.Rg/.Hg/.rk → .cndsBySid/.actsBySid/.varsBySid
+  inst.C      →  .layer
+  inst.cc     →  .instance_vars
+  inst.ka     →  .bbox
+  inst.B      →  .properties
+  inst.u      →  .angle
   rt.trigger  →  .trigger()                   name not obfuscated
 
-  Plugin/behaviour prototype layout from SECTION 27 also holds:
+  Plugin/behaviour prototype layout from SECTION 27 holds:
   .k = cnds, .n = acts, .A = exps, .J = Instance, .K = Type.
 
   Common world ACE names from SECTION 32 spot-checked and holding:
   .nn CompareX, .iu CompareY, .pn IsOnScreen, .uA IsOutsideLayout,
-  .oB PickDistance, .Cq MoveToLayer (PROVEN, see A3).
+  .oB PickDistance, .Cq MoveToLayer (PROVEN by calling it).
 
 ================================================================================
-SECTION A2: WHAT DOES *NOT* HOLD IN 2.3.3
+SECTION A2: WHAT DOES *NOT* HOLD — RUNTIME METHODS
 ================================================================================
 
-  1. rt.wy is NOT the objectRefTable.  In 2.3.3 rt.wy holds a string. No array
-     on the runtime matches the objectRefTable shape; rt.ya(263) is not callable.
-     SECTION 31's index table therefore cannot be used against 2.3.3 as written.
+  Each "actually" below is pinned by the minified function body.
 
-  2. THE PER-PLUGIN ACE LETTERS HAVE SHIFTED.  This is the important one.
-     Verified counter-examples, read from the function bodies and then confirmed
-     by calling them on a live sprite:
+  method                map says   IS         the map's letter actually is
+  --------------------  ---------  ---------  ----------------------------------
+  getObjectByUID        .Tt        .tj        .Tt = typeHasNoSaveBehavior
+  createInstance        .Ut        .Yn        .Ut = typeHasPersistBehavior
+  DestroyInstance       .bh        .$e
+  ClearDeathRow         .CA        .Hc
+  saveInstanceToJSON    .fF        .zt
+  getLayerByName        .mr        (see note) .mr loops b[a].aa().ca=!0
+  refreshUidMap         .Vx        .Vx        correct in the main map
 
-       1.9.6 map says          2.3.3 actually is
-       ---------------------   -----------------------------------------------
-       .RB = SetAnimFrame      .RB = SetAnimSpeed
-                               body: function(a){this.Oh=pa(a);this.Kg=0<=a;
-                                     this.$f||(this.b.Ef(this),this.$f=!0)}
-                               (Oh = animSpeed, Kg = animForwards, pa = cr.abs)
+  Bodies:
 
-       .av = SetAnim           .av = SetMirrored / SetScale family
-       .QB = Spawn             .QB = SetAnimFrame   (PROVEN)
-       .PB = SetAnimSpeed      .PB = SetAnim        (PROVEN)
+    tj = function(b){b=b.toString();return this.jg.hasOwnProperty(b)?this.jg[b]:null}
+         -- exactly Runtime.prototype.getObjectByUID
 
-  3. Do NOT derive the rest of the ACE table by zipping the two builds in order.
-     It drifts. 1.5.2+ exposes 44 Sprite acts where 2.3.3 exposes 40, and the
-     four missing entries shift every name after them. A naive order-alignment
-     produced SetAnim=QB and SetAnimFrame=RB, both of which are wrong and both
-     of which the functional test below disproves. Function ARITY is a useful
-     checksum for spotting where the drift starts, but it is not sufficient to
-     realign: too many ACEs take one argument.
+    Yn = ...Math.random()*b.fg.length);return this.Yn(b.fg[c],a,d,g)}
+         return b.be?this.Sg(b.be,a,!1,d,g,!1):null
+         -- recurses on family members (fg), then createInstanceFromInit (Sg)
+            on the default instance (be). That is createInstance.
 
-     The reliable method is per-function: read the minified body and match it
-     against the named implementation in an unobfuscated build.
+    $e = function(b){var a,d;a=b.type.name;var g=null;if(this.Qh.hasOwnProperty(a)
+         -- DestroyInstance opens by looking the type name up in deathRow
+
+    Hc = function(){if(this.dh){...this.qs=!0;...this.Ce[d]...a.q.push...}}
+         -- walks createRow into type.instances. Confirmed a second way:
+            1.5.2 reads
+              if (this.loadFromJson !== null) { this.ClearDeathRow(); loadFromJSONString(...) }
+            and 2.3.3 reads
+              null!==this.fc&&(this.Hc(),this.aG(this.fc)
+            which pins Hc = ClearDeathRow AND fc = loadFromJson at once.
+
+    zt = function(b,d){...m=b.type;e=m.ja;var n={};d?n.c2=!0:n.uid=b.uid;...}
+         -- saveInstanceToJSON(inst, state_only)
+
+    Tt = function(b){return this.Ny(b,yc)}
+    Ut = function(b){return this.Ny(b,oc.MH)}
+         -- both are wrappers around typeHasBehavior. 1.5.2 defines
+            typeHasNoSaveBehavior immediately before typeHasPersistBehavior, and
+            2.3.3 defines Tt immediately before Ut, so they pair off in order.
+
+  getLayerByName was not hunted down: it is a four-line loop over rt.wa.ua
+  comparing names case-insensitively, and a wrong guess silently returns the
+  WRONG LAYER. Write it yourself.
+
+  Also note:
+    .qs is isInClearDeathRow, NOT hasPendingInstances. hasPendingInstances is .dh.
+    rt.wy is NOT the objectRefTable — on 2.3.3 it holds a string. No array on the
+    runtime matches the objectRefTable shape and rt.ya(263) is not callable, so
+    SECTION 31's index table cannot be used against 2.3.3 as written.
 
 ================================================================================
-SECTION A3: THE THREE ANIMATION/LAYER ACTS, PROVEN
+SECTION A3: WHAT DOES *NOT* HOLD — PLUGIN ACE LETTERS
 ================================================================================
 
-  Derived from function bodies, then confirmed by calling them on the live game
-  and observing the effect:
+  Verified counter-examples, read from the bodies and then confirmed by calling
+  them on a live sprite:
 
-    Sprite.acts.SetAnim       →  .PB        PROVEN
-    Sprite.acts.SetAnimFrame  →  .QB        PROVEN
-    Sprite.acts.MoveToLayer   →  .Cq        PROVEN  (unchanged from 1.9.6)
-    Sprite.acts.StartAnim     →  .OC        (body match; unchanged from 1.9.6)
-    Sprite.acts.SetAnimSpeed  →  .RB        (body match)
+    1.9.6 map says          2.3.3 actually is
+    ---------------------   -------------------------------------------------
+    .RB = SetAnimFrame      .RB = SetAnimSpeed
+                            body: function(a){this.Oh=pa(a);this.Kg=0<=a;
+                                  this.$f||(this.b.Ef(this),this.$f=!0)}
+                            (Oh = animSpeed, Kg = animForwards, pa = cr.abs)
+    .av = SetAnim           .av = SetMirrored / SetScale family
+    .QB = Spawn             .QB = SetAnimFrame    PROVEN
+    .PB = SetAnimSpeed      .PB = SetAnim         PROVEN
 
-  Bodies, for anyone re-deriving these:
+  The three that matter most, and their bodies:
 
     OC = function(a){this.Jf=!0;this.mf=this.we.V;
                      1===a&&0!==this.Y&&(this.Rk=0,this.jl||this.Br());
                      this.$f||(this.b.Ef(this),this.$f=!0)}          StartAnim
-
     PB = function(a,b){this.dj=a;this.Ev=b;
                        this.$f||(this.b.Ef(this),this.$f=!0);
                        this.jl||this.Mv()}                           SetAnim
-
     QB = function(a){this.Rk=a;
                      this.$f||(this.b.Ef(this),this.$f=!0);
                      this.jl||this.Br()}                             SetAnimFrame
-
     Cq = function(a){a&&a!=this.C&&(this.C.ek(this,!0),this.C=a,
                      a.Ok(this,!0),this.b.X=!0)}                     MoveToLayer
 
-  Reading those bodies also names five instance internals:
-
-    .Rk  → changeAnimFrame       .dj  → changeAnimName
-    .Ev  → changeAnimFrom        .jl  → inAnimTrigger
-    .$f  → isTicking             .Br() → doChangeAnimFrame()
-    .Mv() → doChangeAnim()       .b.Ef() → runtime.tickMe()
-    .Jf  → animPlaying           .Oh  → animSpeed      .Kg → animForwards
-    .C.ek() → layer.removeFromInstanceList()
-    .C.Ok() → layer.appendToInstanceList()
-
-  Test results on a live 2.3.3 build:
+  Live test results:
 
     SetAnimFrame (QB) on t210: frame 2 -> asked 0 -> got 0            PROVEN
     SetAnim      (PB) on t85: "idle_down" -> asked "idle_up" -> got "idle_up"
-    MoveToLayer  (Cq) on t590: "test" -> "Layer 0", present in the new
+    MoveToLayer  (Cq) on t590: "test" -> "Layer 0", and present in the new
                                layer's instance list                 PROVEN
+
+  DO NOT derive the rest of the ACE table by zipping the two builds in order.
+  It drifts: 1.5.2+ exposes 44 Sprite acts where 2.3.3 exposes 40, and the four
+  missing entries shift every name after them. A naive order-alignment produced
+  SetAnim=QB and SetAnimFrame=RB, both of which the live test above disproves.
+  Function ARITY is a useful checksum for spotting WHERE the drift starts, but it
+  cannot realign: too many ACEs take one argument.
 
 ================================================================================
 SECTION A4: IDENTIFIERS NOT IN THE MAIN MAP
 ================================================================================
 
-  These are absent from the 1.4–1.9.6 document and were recovered from a running
-  2.3.3 build by shape, then confirmed:
+  Runtime:
+    rt.tD       →  .all_global_vars      only array of {name,data} over 100 long
+    rt.cH()     →  .saveToJSONString()   CALLED IT - returns a >100 KB JSON string
+                                         starting "{". With rt.aG()
+                                         (loadFromJSONString) this is a complete
+                                         save/load pair for external tooling.
+    rt.fc       →  .loadFromJson         the property you ASSIGN to request a load
+    rt.xv       →  .blocksBySid          follows Rg/Hg/rk in the constructor
+                                         exactly as blocksBySid follows
+                                         cnds/acts/varsBySid in 1.5.2
+    rt.Ny()     →  .typeHasBehavior()    loops b.qb[d].behavior instanceof a
+    rt.Sg()     →  .createInstanceFromInit()
+    rt.dh       →  .hasPendingInstances
+    rt.vm/.xf/.Td → .pushCleanSol / .pushCopySol / .popSol
+                                         all three are the same shape (a loop
+                                         calling the same-named method on each
+                                         element) and pair off in definition order
 
-  Obfuscated  →  Unobfuscated            How it was established
-  ----------     ---------------------   -------------------------------------
-  rt.tD       →  .all_global_vars        only array of {name,data} over 100 long
-  rt.cH()     →  .saveToJSONString()     CALLED IT — returns a >100 KB JSON
-                                         string starting "{". This is the whole
-                                         savegame/snapshot entry point.
-  inst.ab     →  .cur_animation          object with .name and a real .frames
-                                         array — note .frames is NOT obfuscated
-  inst.Y      →  .cur_frame              only integer that varies per instance
-                                         and stays inside [0, frames.length);
-                                         confirmed in source at c2runtime.js
-                                         line 500: this.Y>=this.ab.frames.length
-                                         &&(this.Y=this.ab.frames.length-1)
-  inst.da     →  .behavior_insts         array whose entries carry .type/.behavior
+  Layout:
+    layout.Bo() →  .getLayerBySid()      body: for(d=this.ua.length;a<d;a++)
+                                         if(this.ua[a].Ba===b)return this.ua[a]
 
-  rt.cH() is the one worth having: with rt.aG() (loadFromJSONString) it is a
-  complete save/load pair for external tooling.
+  Layer:
+    layer.Lc()  →  .getScale()           body: this.iF()*(this.b.Hd||b?this.b.Pk:1)
+    layer.iF()  →  .getNormalScale()     body: (this.scale*this.Eb.scale-1)*this.ub+1
+                                         note .scale is NOT obfuscated
+    layer.Em()  →  .setZIndicesStaleFrom()
+    layer.Dg    →  .zindices_stale_from
+
+  Instance:
+    inst.ab     →  .cur_animation        has .name and a real .frames array —
+                                         .frames is NOT obfuscated
+    inst.Y      →  .cur_frame            confirmed in source:
+                                         this.Y>=this.ab.frames.length&&
+                                         (this.Y=this.ab.frames.length-1)
+    inst.da     →  .behavior_insts
+    inst.Rk     →  .changeAnimFrame      inst.dj  → .changeAnimName
+    inst.Ev     →  .changeAnimFrom       inst.jl  → .inAnimTrigger
+    inst.$f     →  .isTicking            inst.Jf  → .animPlaying
+    inst.Oh     →  .animSpeed            inst.Kg  → .animForwards
+    inst.Br()   →  .doChangeAnimFrame()  inst.Mv() → .doChangeAnim()
+    inst.b.Ef() →  runtime.tickMe()
+    inst.C.ek() →  layer.removeFromInstanceList()
+    inst.C.Ok() →  layer.appendToInstanceList()
+
+  EventBlock (groups):
+    group.Dm()  →  .setGroupActive()     body: if(this.ci!==!!b){this.ci=!!b;
+                                         ...this.Wn[b].Qy()...}
+    group.ci    →  .group_active
+    group.Wn    →  .contained_includes
+    group.Qy()  →  .updateActive()
 
 ================================================================================
 SECTION A5: REACHING THE ACE TABLES AT RUNTIME
 ================================================================================
 
-  In 2.3.3 the plugin objects are NOT reachable from the cr namespace — `cr` is
+  On 2.3.3 the plugin objects are NOT reachable from the cr namespace — `cr` is
   not a global and `oc` resolves to an unrelated empty object. Only 408 functions
   are reachable by walking the runtime object, and none of them are ACEs.
 
@@ -180,8 +247,27 @@ SECTION A5: REACHING THE ACE TABLES AT RUNTIME
     * type.plugin is `.ja` in 2.3.3, not `.r` as SECTION 16 gives. `.r` is absent.
     * The ACE functions are installed on a PROTOTYPE
       (`a.prototype.QB = function ...`), so Object.getOwnPropertyNames(plug.n)
-      does not list them. Walk the prototype chain, or just access them directly.
-      Own properties of plug.n are the COMMON world acts only.
+      does not list them. Walk the prototype chain, or access them directly.
+      The own properties of plug.n are the COMMON world acts only.
+
+================================================================================
+SECTION A6: TWO TECHNIQUES THAT DID ALL THE WORK
+================================================================================
+
+  1. BODY MATCHING. Take the named implementation from an unobfuscated build,
+     reduce it to a shape that survives minification (which property is assigned,
+     how many methods are called on `this`, which literals appear), and grep the
+     minified file for it. String and number literals survive minification, so
+     `d?n.c2=!0:n.uid=b.uid` is a fingerprint you can search for directly.
+
+  2. DEFINITION ORDER, for pairs a body cannot separate. Closure does not reorder
+     statements, so functions defined next to each other in the source are still
+     next to each other in the output. typeHasNoSaveBehavior sits immediately
+     before typeHasPersistBehavior in 1.5.2, and Tt sits immediately before Ut in
+     2.3.3, so the pair resolves.
+
+     This works for ADJACENT pairs. It does NOT work across a long run — see the
+     Sprite acts drift in SECTION A3.
 
 ================================================================================
 END OF 2.3.3 ADDENDUM

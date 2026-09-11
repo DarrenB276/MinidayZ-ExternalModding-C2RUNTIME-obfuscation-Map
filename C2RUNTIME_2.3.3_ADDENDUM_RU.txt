@@ -1,0 +1,288 @@
+================================================================================
+
+  СРЕДА ВЫПОЛНЕНИЯ CONSTRUCT 2 — ДОПОЛНЕНИЕ ДЛЯ MiniDayZ+ 2.3.3
+  Приложение к C2RUNTIME_OBFUSCATION_MAP_COMPLETE_RU.txt (v1.4–1.9.6)
+
+  НАЗНАЧЕНИЕ: 2.3.3 обфусцирована по той же схеме, но НЕ теми же буквами.
+              Этот файл фиксирует, что было перепроверено на работающей сборке
+              2.3.3: что осталось верным, что НЕТ, и какие идентификаторы
+              отсутствуют в основной карте.
+
+  МЕТОД:      каждая строка ниже проверена запуском 2.3.3 в headless-браузере
+              с чтением, вызовом или сравнением живого объекта, либо чтением
+              ТЕЛА минифицированной функции и сопоставлением его с именованной
+              реализацией в необфусцированной сборке. Ничего не перенесено из
+              документа 1.9.6 «на доверии».
+
+  ------------------------------------------------------------------------------
+  ПРОЧТИТЕ ЭТО ПЕРВЫМ — СЭКОНОМИТ ВАМ ДЕНЬ РАБОТЫ
+  ------------------------------------------------------------------------------
+
+  Не проверяйте сопоставление через `typeof rt.xx === "function"`. Это проходит
+  для ЛЮБОЙ функции. Пять из шести имён МЕТОДОВ среды выполнения из основной
+  карты на 2.3.3 указывают на реальные функции, которые делают совершенно другое:
+  вызов проходит успешно, возвращает правдоподобное значение и тихо портит
+  состояние.
+
+  Имена СВОЙСТВ из основной карты на 2.3.3 в основном верны — их можно проверить
+  по ФОРМЕ (это массив типов? объект групп?), и это настоящая проверка. Имена
+  МЕТОДОВ так проверить нельзя, их нужно сверять по телу функции.
+
+================================================================================
+
+РАЗДЕЛ A1: ЧТО ОСТАЛОСЬ ВЕРНЫМ В 2.3.3 (свойства)
+================================================================================
+
+  Проверено по форме на работающей сборке:
+
+  Обфусц.     →  Необфусц.                    Проверено через
+  ----------     --------------------------   --------------------------------
+  rt.S        →  .types_by_index              массив типов, .name = "t181"
+  rt.wa       →  .running_layout              .name читается
+  rt.wa.ua    →  .layers                      массив
+  layer.q     →  .instances                   массив; layer .name сохранён
+  layer.Ba    →  .sid
+  type.q      →  .instances                   массив
+  type.pb     →  .families                    массив
+  type.R      →  .is_family                   булево
+  type.qd     →  .animations                  массив
+  type.qb     →  .behaviors                   массив
+  rt.jg       →  .objectsByUid                объект
+  rt.wj       →  .groups_by_name              объект
+  rt.Qh       →  .deathRow                    присутствует
+  rt.X        →  .redraw                      булево
+  rt.ip       →  .fps                         число
+  rt.Ce       →  .createRow
+  rt.Rg/.Hg/.rk → .cndsBySid/.actsBySid/.varsBySid
+  inst.C      →  .layer
+  inst.cc     →  .instance_vars
+  inst.ka     →  .bbox
+  inst.B      →  .properties
+  inst.u      →  .angle
+  rt.trigger  →  .trigger()                   имя не обфусцировано
+
+  Схема прототипов плагинов/поведений из РАЗДЕЛА 27 верна:
+  .k = cnds, .n = acts, .A = exps, .J = Instance, .K = Type.
+
+  Общие имена ACE для world-плагинов из РАЗДЕЛА 32 выборочно проверены и верны:
+  .nn CompareX, .iu CompareY, .pn IsOnScreen, .uA IsOutsideLayout,
+  .oB PickDistance, .Cq MoveToLayer (ДОКАЗАНО вызовом).
+
+================================================================================
+РАЗДЕЛ A2: ЧТО НЕ ВЕРНО — МЕТОДЫ СРЕДЫ ВЫПОЛНЕНИЯ
+================================================================================
+
+  Каждое «НА САМОМ ДЕЛЕ» ниже закреплено телом минифицированной функции.
+
+  метод                 в карте    НА САМОМ    чем буква из карты является
+                                   ДЕЛЕ        в действительности
+  --------------------  ---------  ----------  ---------------------------------
+  getObjectByUID        .Tt        .tj         .Tt = typeHasNoSaveBehavior
+  createInstance        .Ut        .Yn         .Ut = typeHasPersistBehavior
+  DestroyInstance       .bh        .$e
+  ClearDeathRow         .CA        .Hc
+  saveInstanceToJSON    .fF        .zt
+  getLayerByName        .mr        (см. ниже)  .mr перебирает b[a].aa().ca=!0
+  refreshUidMap         .Vx        .Vx         в основной карте верно
+
+  Тела функций:
+
+    tj = function(b){b=b.toString();return this.jg.hasOwnProperty(b)?this.jg[b]:null}
+         -- в точности Runtime.prototype.getObjectByUID
+
+    Yn = ...Math.random()*b.fg.length);return this.Yn(b.fg[c],a,d,g)}
+         return b.be?this.Sg(b.be,a,!1,d,g,!1):null
+         -- рекурсия по членам семейства (fg), затем createInstanceFromInit (Sg)
+            для экземпляра по умолчанию (be). Это createInstance.
+
+    $e = function(b){var a,d;a=b.type.name;var g=null;if(this.Qh.hasOwnProperty(a)
+         -- DestroyInstance начинается с поиска имени типа в deathRow
+
+    Hc = function(){if(this.dh){...this.qs=!0;...this.Ce[d]...a.q.push...}}
+         -- переносит createRow в type.instances. Подтверждено вторым способом:
+            в 1.5.2 написано
+              if (this.loadFromJson !== null) { this.ClearDeathRow(); loadFromJSONString(...) }
+            а в 2.3.3
+              null!==this.fc&&(this.Hc(),this.aG(this.fc)
+            что одновременно закрепляет Hc = ClearDeathRow И fc = loadFromJson.
+
+    zt = function(b,d){...m=b.type;e=m.ja;var n={};d?n.c2=!0:n.uid=b.uid;...}
+         -- saveInstanceToJSON(inst, state_only)
+
+    Tt = function(b){return this.Ny(b,yc)}
+    Ut = function(b){return this.Ny(b,oc.MH)}
+         -- обе являются обёртками над typeHasBehavior. В 1.5.2
+            typeHasNoSaveBehavior объявлена непосредственно перед
+            typeHasPersistBehavior, а в 2.3.3 Tt объявлена непосредственно перед
+            Ut — поэтому пара разрешается по порядку.
+
+  getLayerByName искать не стали: это цикл в четыре строки по rt.wa.ua со
+  сравнением имён без учёта регистра, а неверная догадка здесь тихо вернёт
+  НЕ ТОТ СЛОЙ. Напишите её сами.
+
+  Также обратите внимание:
+    .qs — это isInClearDeathRow, а НЕ hasPendingInstances.
+    hasPendingInstances — это .dh.
+    rt.wy — НЕ objectRefTable: на 2.3.3 там строка. Ни один массив среды
+    выполнения не подходит по форме под objectRefTable, и rt.ya(263) не
+    вызывается, поэтому таблицу индексов из РАЗДЕЛА 31 нельзя применять к 2.3.3
+    в том виде, как она записана.
+
+================================================================================
+РАЗДЕЛ A3: ЧТО НЕ ВЕРНО — БУКВЫ ACE ПЛАГИНОВ
+================================================================================
+
+  Проверенные контрпримеры: прочитаны из тел функций, затем подтверждены вызовом
+  на живом спрайте:
+
+    в карте 1.9.6           в 2.3.3 на самом деле
+    ---------------------   -------------------------------------------------
+    .RB = SetAnimFrame      .RB = SetAnimSpeed
+                            тело: function(a){this.Oh=pa(a);this.Kg=0<=a;
+                                  this.$f||(this.b.Ef(this),this.$f=!0)}
+                            (Oh = animSpeed, Kg = animForwards, pa = cr.abs)
+    .av = SetAnim           .av = семейство SetMirrored / SetScale
+    .QB = Spawn             .QB = SetAnimFrame    ДОКАЗАНО
+    .PB = SetAnimSpeed      .PB = SetAnim         ДОКАЗАНО
+
+  Три самые важные и их тела:
+
+    OC = function(a){this.Jf=!0;this.mf=this.we.V;
+                     1===a&&0!==this.Y&&(this.Rk=0,this.jl||this.Br());
+                     this.$f||(this.b.Ef(this),this.$f=!0)}          StartAnim
+    PB = function(a,b){this.dj=a;this.Ev=b;
+                       this.$f||(this.b.Ef(this),this.$f=!0);
+                       this.jl||this.Mv()}                           SetAnim
+    QB = function(a){this.Rk=a;
+                     this.$f||(this.b.Ef(this),this.$f=!0);
+                     this.jl||this.Br()}                             SetAnimFrame
+    Cq = function(a){a&&a!=this.C&&(this.C.ek(this,!0),this.C=a,
+                     a.Ok(this,!0),this.b.X=!0)}                     MoveToLayer
+
+  Результаты живых тестов:
+
+    SetAnimFrame (QB) на t210: кадр 2 -> запрошен 0 -> получен 0     ДОКАЗАНО
+    SetAnim      (PB) на t85: "idle_down" -> запрошен "idle_up" ->
+                              получен "idle_up"                      ДОКАЗАНО
+    MoveToLayer  (Cq) на t590: "test" -> "Layer 0", и присутствует
+                               в списке экземпляров нового слоя      ДОКАЗАНО
+
+  НЕ выводите остальную таблицу ACE, сопоставляя две сборки по порядку.
+  Порядок «уплывает»: в 1.5.2+ у Sprite 44 действия, а в 2.3.3 — 40, и четыре
+  отсутствующих записи сдвигают все последующие имена. Наивное сопоставление по
+  порядку дало SetAnim=QB и SetAnimFrame=RB — оба опровергнуты живым тестом
+  выше. КОЛИЧЕСТВО АРГУМЕНТОВ — полезная контрольная сумма, чтобы заметить, ГДЕ
+  начинается сдвиг, но выровнять по нему нельзя: слишком много ACE принимают
+  один аргумент.
+
+================================================================================
+РАЗДЕЛ A4: ИДЕНТИФИКАТОРЫ, ОТСУТСТВУЮЩИЕ В ОСНОВНОЙ КАРТЕ
+================================================================================
+
+  Среда выполнения:
+    rt.tD       →  .all_global_vars      единственный массив {name,data}
+                                         длиной более 100
+    rt.cH()     →  .saveToJSONString()   ВЫЗВАНО — возвращает строку JSON
+                                         размером >100 КБ, начинающуюся с "{".
+                                         Вместе с rt.aG() (loadFromJSONString)
+                                         это готовая пара сохранения/загрузки
+                                         для внешних инструментов.
+    rt.fc       →  .loadFromJson         свойство, которому ПРИСВАИВАЮТ строку,
+                                         чтобы запросить загрузку
+    rt.xv       →  .blocksBySid          идёт за Rg/Hg/rk в конструкторе ровно
+                                         так же, как blocksBySid идёт за
+                                         cnds/acts/varsBySid в 1.5.2
+    rt.Ny()     →  .typeHasBehavior()    перебирает b.qb[d].behavior instanceof a
+    rt.Sg()     →  .createInstanceFromInit()
+    rt.dh       →  .hasPendingInstances
+    rt.vm/.xf/.Td → .pushCleanSol / .pushCopySol / .popSol
+                                         все три одной формы (цикл, вызывающий
+                                         одноимённый метод на каждом элементе)
+                                         и разрешаются по порядку объявления
+
+  Layout:
+    layout.Bo() →  .getLayerBySid()      тело: for(d=this.ua.length;a<d;a++)
+                                         if(this.ua[a].Ba===b)return this.ua[a]
+
+  Layer:
+    layer.Lc()  →  .getScale()           тело: this.iF()*(this.b.Hd||b?this.b.Pk:1)
+    layer.iF()  →  .getNormalScale()     тело: (this.scale*this.Eb.scale-1)*this.ub+1
+                                         обратите внимание: .scale НЕ обфусцировано
+    layer.Em()  →  .setZIndicesStaleFrom()
+    layer.Dg    →  .zindices_stale_from
+
+  Экземпляр (Instance):
+    inst.ab     →  .cur_animation        содержит .name и настоящий массив
+                                         .frames — .frames НЕ обфусцировано
+    inst.Y      →  .cur_frame            подтверждено в исходнике:
+                                         this.Y>=this.ab.frames.length&&
+                                         (this.Y=this.ab.frames.length-1)
+    inst.da     →  .behavior_insts
+    inst.Rk     →  .changeAnimFrame      inst.dj  → .changeAnimName
+    inst.Ev     →  .changeAnimFrom       inst.jl  → .inAnimTrigger
+    inst.$f     →  .isTicking            inst.Jf  → .animPlaying
+    inst.Oh     →  .animSpeed            inst.Kg  → .animForwards
+    inst.Br()   →  .doChangeAnimFrame()  inst.Mv() → .doChangeAnim()
+    inst.b.Ef() →  runtime.tickMe()
+    inst.C.ek() →  layer.removeFromInstanceList()
+    inst.C.Ok() →  layer.appendToInstanceList()
+
+  EventBlock (группы):
+    group.Dm()  →  .setGroupActive()     тело: if(this.ci!==!!b){this.ci=!!b;
+                                         ...this.Wn[b].Qy()...}
+    group.ci    →  .group_active
+    group.Wn    →  .contained_includes
+    group.Qy()  →  .updateActive()
+
+================================================================================
+РАЗДЕЛ A5: КАК ДОБРАТЬСЯ ДО ТАБЛИЦ ACE ВО ВРЕМЯ ВЫПОЛНЕНИЯ
+================================================================================
+
+  В 2.3.3 объекты плагинов НЕ достижимы через пространство имён cr: `cr` не
+  является глобальной переменной, а `oc` указывает на посторонний пустой объект.
+  Обходом объекта среды выполнения достижимы лишь 408 функций, и ни одна из них
+  не является ACE.
+
+  Но они достижимы через любой тип объекта:
+
+      var rt   = window.cr_getC2Runtime();
+      var type = rt.S.find(function (t) { return t && t.name === "t181"; });
+      var plug = type.ja;            // экземпляр плагина   (НЕ type.r)
+      plug.k                         // cnds
+      plug.n                         // acts
+      plug.A                         // exps
+      plug.n.QB.call(inst, 3);       // SetAnimFrame
+
+  Две ловушки:
+
+    * type.plugin в 2.3.3 — это `.ja`, а не `.r`, как указано в РАЗДЕЛЕ 16.
+      `.r` отсутствует.
+    * Функции ACE установлены на ПРОТОТИПЕ
+      (`a.prototype.QB = function ...`), поэтому
+      Object.getOwnPropertyNames(plug.n) их не покажет. Обходите цепочку
+      прототипов или обращайтесь к ним напрямую. Собственные свойства plug.n —
+      это только ОБЩИЕ world-действия.
+
+================================================================================
+РАЗДЕЛ A6: ДВА ПРИЁМА, КОТОРЫЕ СДЕЛАЛИ ВСЮ РАБОТУ
+================================================================================
+
+  1. СОПОСТАВЛЕНИЕ ПО ТЕЛУ ФУНКЦИИ. Возьмите именованную реализацию из
+     необфусцированной сборки, сведите её к форме, переживающей минификацию
+     (какое свойство присваивается, сколько методов вызывается на `this`, какие
+     литералы встречаются), и найдите её в минифицированном файле. Строковые и
+     числовые литералы минификацию переживают, поэтому `d?n.c2=!0:n.uid=b.uid`
+     — это отпечаток, который можно искать напрямую.
+
+  2. ПОРЯДОК ОБЪЯВЛЕНИЯ — для пар, которые не различить по телу. Closure не
+     переставляет инструкции, поэтому функции, объявленные рядом в исходнике,
+     остаются рядом и в выводе. typeHasNoSaveBehavior стоит непосредственно
+     перед typeHasPersistBehavior в 1.5.2, а Tt — непосредственно перед Ut в
+     2.3.3, и пара разрешается.
+
+     Это работает для СОСЕДНИХ пар. Это НЕ работает на длинной последовательности
+     — см. сдвиг действий Sprite в РАЗДЕЛЕ A3.
+
+================================================================================
+КОНЕЦ ДОПОЛНЕНИЯ ДЛЯ 2.3.3
+================================================================================

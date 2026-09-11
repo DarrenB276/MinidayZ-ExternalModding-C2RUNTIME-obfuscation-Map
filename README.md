@@ -19,14 +19,22 @@ This repository contains a **complete obfuscation map** for the **Construct 2 ru
 
 > ### ⚠️ Using this on **2.3.3**? Read the addendum first.
 >
-> The runtime-level names below still hold in 2.3.3 (20 of 21 spot-checked),
-> **but the per-plugin ACE letters have shifted.** On 2.3.3, `.RB` is
-> `SetAnimSpeed`, not `SetAnimFrame`; `SetAnimFrame` is `.QB` and `SetAnim`
-> is `.PB`. Using the 1.9.6 letters there will silently call the *wrong
-> action* rather than fail. See
-> [`C2RUNTIME_2.3.3_ADDENDUM_ENG.txt`](C2RUNTIME_2.3.3_ADDENDUM_ENG.txt),
-> which also adds `saveToJSONString`, `all_global_vars`, `cur_frame`,
-> `cur_animation` and `behavior_insts` — none of which are in the main map.
+> The **property** names below still hold on 2.3.3. The **method** names largely
+> do not: five of six runtime methods resolve to a *different real function*, so
+> the call succeeds and quietly does the wrong thing. `.Tt` is not
+> `getObjectByUID` (it is `typeHasNoSaveBehavior`), `.Ut` is not `createInstance`
+> (it is `typeHasPersistBehavior`), and the per-plugin ACE letters shifted too —
+> `.RB` is `SetAnimSpeed`, not `SetAnimFrame`.
+>
+> **Never verify a mapping with `typeof x === "function"`** — it passes for any
+> function. Check the method BODY.
+>
+> See [`C2RUNTIME_2.3.3_ADDENDUM_ENG.txt`](C2RUNTIME_2.3.3_ADDENDUM_ENG.txt) /
+> [`C2RUNTIME_2.3.3_ADDENDUM_RU.txt`](C2RUNTIME_2.3.3_ADDENDUM_RU.txt), which also
+> add ~40 identifiers the main map does not have, including
+> `saveToJSONString` (`rt.cH`), `loadFromJson` (`rt.fc`), `all_global_vars`
+> (`rt.tD`), `blocksBySid` (`rt.xv`), `cur_frame` (`inst.Y`) and
+> `cur_animation` (`inst.ab`).
 
 ---
 
@@ -51,7 +59,8 @@ This documentation exists so that **aspiring modders** can:
 |------|-------------|
 | `C2RUNTIME_OBFUSCATION_MAP_COMPLETE_ENG.txt` | Full obfuscation map — English |
 | `C2RUNTIME_OBFUSCATION_MAP_COMPLETE_RU.txt` | Full obfuscation map — Russian (Русский) |
-| `C2RUNTIME_2.3.3_ADDENDUM_ENG.txt` | **2.3.3 addendum** — what still holds, what shifted, and five identifiers the main map does not have |
+| `C2RUNTIME_2.3.3_ADDENDUM_ENG.txt` | **2.3.3 addendum** — English |
+| `C2RUNTIME_2.3.3_ADDENDUM_RU.txt` | **2.3.3 addendum** — Russian (Русский) |
 | `README.md` | This file |
 
 ---
