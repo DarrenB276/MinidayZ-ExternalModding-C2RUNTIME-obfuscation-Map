@@ -1,0 +1,188 @@
+================================================================================
+
+  CONSTRUCT 2 RUNTIME — MiniDayZ+ 2.3.3 ADDENDUM
+  Companion to C2RUNTIME_OBFUSCATION_MAP_COMPLETE_ENG.txt (v1.4–1.9.6)
+
+  PURPOSE: 2.3.3 is minified with the same scheme, but NOT with the same
+           letters throughout. This file records what was re-tested against a
+           running 2.3.3 build, what still holds, what does NOT, and five
+           identifiers the original map does not contain.
+
+  METHOD:  every line below was checked by booting 2.3.3 in a headless browser
+           and reading, calling, or diffing the live object. Nothing here is
+           carried over from the 1.9.6 document on trust. Where a claim is
+           proven by observing an effect, it says PROVEN.
+
+================================================================================
+
+SECTION A1: WHAT STILL HOLDS IN 2.3.3
+================================================================================
+
+  20 of 21 spot-checked runtime claims from the main map verified unchanged:
+
+  Obfuscated  →  Unobfuscated                 Checked by
+  ----------     --------------------------   --------------------------------
+  rt.S        →  .types_by_index              array of types, .name = "t181"
+  rt.wa       →  .running_layout              .name readable
+  rt.wa.ua    →  .layers                      array
+  layer.q     →  .instances                   array; layer .name survives
+  type.q      →  .instances                   array
+  type.pb     →  .families                    array
+  type.R      →  .is_family                   boolean
+  rt.jg       →  .objectsByUid                object
+  rt.wj       →  .groups_by_name              object
+  rt.Qh       →  .deathRow                    present
+  rt.X        →  .redraw                      boolean
+  rt.ip       →  .fps                         number
+  rt.Ut()     →  .createInstance()            function
+  rt.bh()     →  .DestroyInstance()           function
+  rt.CA()     →  .ClearDeathRow()             function
+  rt.Tt()     →  .getObjectByUID()            function
+  rt.mr()     →  .getLayerByName()             function
+  rt.aG()     →  .loadFromJSONString()        function
+  rt.fF()     →  .saveInstanceToJSON()        function
+  rt.$o()     →  .restoreInstanceData()       function
+  rt.trigger  →  .trigger()                   name not obfuscated
+
+  Plugin/behaviour prototype layout from SECTION 27 also holds:
+  .k = cnds, .n = acts, .A = exps, .J = Instance, .K = Type.
+
+  Common world ACE names from SECTION 32 spot-checked and holding:
+  .nn CompareX, .iu CompareY, .pn IsOnScreen, .uA IsOutsideLayout,
+  .oB PickDistance, .Cq MoveToLayer (PROVEN, see A3).
+
+================================================================================
+SECTION A2: WHAT DOES *NOT* HOLD IN 2.3.3
+================================================================================
+
+  1. rt.wy is NOT the objectRefTable.  In 2.3.3 rt.wy holds a string. No array
+     on the runtime matches the objectRefTable shape; rt.ya(263) is not callable.
+     SECTION 31's index table therefore cannot be used against 2.3.3 as written.
+
+  2. THE PER-PLUGIN ACE LETTERS HAVE SHIFTED.  This is the important one.
+     Verified counter-examples, read from the function bodies and then confirmed
+     by calling them on a live sprite:
+
+       1.9.6 map says          2.3.3 actually is
+       ---------------------   -----------------------------------------------
+       .RB = SetAnimFrame      .RB = SetAnimSpeed
+                               body: function(a){this.Oh=pa(a);this.Kg=0<=a;
+                                     this.$f||(this.b.Ef(this),this.$f=!0)}
+                               (Oh = animSpeed, Kg = animForwards, pa = cr.abs)
+
+       .av = SetAnim           .av = SetMirrored / SetScale family
+       .QB = Spawn             .QB = SetAnimFrame   (PROVEN)
+       .PB = SetAnimSpeed      .PB = SetAnim        (PROVEN)
+
+  3. Do NOT derive the rest of the ACE table by zipping the two builds in order.
+     It drifts. 1.5.2+ exposes 44 Sprite acts where 2.3.3 exposes 40, and the
+     four missing entries shift every name after them. A naive order-alignment
+     produced SetAnim=QB and SetAnimFrame=RB, both of which are wrong and both
+     of which the functional test below disproves. Function ARITY is a useful
+     checksum for spotting where the drift starts, but it is not sufficient to
+     realign: too many ACEs take one argument.
+
+     The reliable method is per-function: read the minified body and match it
+     against the named implementation in an unobfuscated build.
+
+================================================================================
+SECTION A3: THE THREE ANIMATION/LAYER ACTS, PROVEN
+================================================================================
+
+  Derived from function bodies, then confirmed by calling them on the live game
+  and observing the effect:
+
+    Sprite.acts.SetAnim       →  .PB        PROVEN
+    Sprite.acts.SetAnimFrame  →  .QB        PROVEN
+    Sprite.acts.MoveToLayer   →  .Cq        PROVEN  (unchanged from 1.9.6)
+    Sprite.acts.StartAnim     →  .OC        (body match; unchanged from 1.9.6)
+    Sprite.acts.SetAnimSpeed  →  .RB        (body match)
+
+  Bodies, for anyone re-deriving these:
+
+    OC = function(a){this.Jf=!0;this.mf=this.we.V;
+                     1===a&&0!==this.Y&&(this.Rk=0,this.jl||this.Br());
+                     this.$f||(this.b.Ef(this),this.$f=!0)}          StartAnim
+
+    PB = function(a,b){this.dj=a;this.Ev=b;
+                       this.$f||(this.b.Ef(this),this.$f=!0);
+                       this.jl||this.Mv()}                           SetAnim
+
+    QB = function(a){this.Rk=a;
+                     this.$f||(this.b.Ef(this),this.$f=!0);
+                     this.jl||this.Br()}                             SetAnimFrame
+
+    Cq = function(a){a&&a!=this.C&&(this.C.ek(this,!0),this.C=a,
+                     a.Ok(this,!0),this.b.X=!0)}                     MoveToLayer
+
+  Reading those bodies also names five instance internals:
+
+    .Rk  → changeAnimFrame       .dj  → changeAnimName
+    .Ev  → changeAnimFrom        .jl  → inAnimTrigger
+    .$f  → isTicking             .Br() → doChangeAnimFrame()
+    .Mv() → doChangeAnim()       .b.Ef() → runtime.tickMe()
+    .Jf  → animPlaying           .Oh  → animSpeed      .Kg → animForwards
+    .C.ek() → layer.removeFromInstanceList()
+    .C.Ok() → layer.appendToInstanceList()
+
+  Test results on a live 2.3.3 build:
+
+    SetAnimFrame (QB) on t210: frame 2 -> asked 0 -> got 0            PROVEN
+    SetAnim      (PB) on t85: "idle_down" -> asked "idle_up" -> got "idle_up"
+    MoveToLayer  (Cq) on t590: "test" -> "Layer 0", present in the new
+                               layer's instance list                 PROVEN
+
+================================================================================
+SECTION A4: IDENTIFIERS NOT IN THE MAIN MAP
+================================================================================
+
+  These are absent from the 1.4–1.9.6 document and were recovered from a running
+  2.3.3 build by shape, then confirmed:
+
+  Obfuscated  →  Unobfuscated            How it was established
+  ----------     ---------------------   -------------------------------------
+  rt.tD       →  .all_global_vars        only array of {name,data} over 100 long
+  rt.cH()     →  .saveToJSONString()     CALLED IT — returns a >100 KB JSON
+                                         string starting "{". This is the whole
+                                         savegame/snapshot entry point.
+  inst.ab     →  .cur_animation          object with .name and a real .frames
+                                         array — note .frames is NOT obfuscated
+  inst.Y      →  .cur_frame              only integer that varies per instance
+                                         and stays inside [0, frames.length);
+                                         confirmed in source at c2runtime.js
+                                         line 500: this.Y>=this.ab.frames.length
+                                         &&(this.Y=this.ab.frames.length-1)
+  inst.da     →  .behavior_insts         array whose entries carry .type/.behavior
+
+  rt.cH() is the one worth having: with rt.aG() (loadFromJSONString) it is a
+  complete save/load pair for external tooling.
+
+================================================================================
+SECTION A5: REACHING THE ACE TABLES AT RUNTIME
+================================================================================
+
+  In 2.3.3 the plugin objects are NOT reachable from the cr namespace — `cr` is
+  not a global and `oc` resolves to an unrelated empty object. Only 408 functions
+  are reachable by walking the runtime object, and none of them are ACEs.
+
+  They ARE reachable through any object type:
+
+      var rt   = window.cr_getC2Runtime();
+      var type = rt.S.find(function (t) { return t && t.name === "t181"; });
+      var plug = type.ja;            // the plugin instance   (NOT type.r)
+      plug.k                         // cnds
+      plug.n                         // acts
+      plug.A                         // exps
+      plug.n.QB.call(inst, 3);       // SetAnimFrame
+
+  Two traps:
+
+    * type.plugin is `.ja` in 2.3.3, not `.r` as SECTION 16 gives. `.r` is absent.
+    * The ACE functions are installed on a PROTOTYPE
+      (`a.prototype.QB = function ...`), so Object.getOwnPropertyNames(plug.n)
+      does not list them. Walk the prototype chain, or just access them directly.
+      Own properties of plug.n are the COMMON world acts only.
+
+================================================================================
+END OF 2.3.3 ADDENDUM
+================================================================================

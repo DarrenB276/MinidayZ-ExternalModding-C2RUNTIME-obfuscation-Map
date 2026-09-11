@@ -17,6 +17,19 @@
 
 This repository contains a **complete obfuscation map** for the **Construct 2 runtime** (`c2runtime.js`) as used in **MiniDayZ+ v1.4–1.9.6+**.
 
+> ### ⚠️ Using this on **2.3.3**? Read the addendum first.
+>
+> The runtime-level names below still hold in 2.3.3 (20 of 21 spot-checked),
+> **but the per-plugin ACE letters have shifted.** On 2.3.3, `.RB` is
+> `SetAnimSpeed`, not `SetAnimFrame`; `SetAnimFrame` is `.QB` and `SetAnim`
+> is `.PB`. Using the 1.9.6 letters there will silently call the *wrong
+> action* rather than fail. See
+> [`C2RUNTIME_2.3.3_ADDENDUM_ENG.txt`](C2RUNTIME_2.3.3_ADDENDUM_ENG.txt),
+> which also adds `saveToJSONString`, `all_global_vars`, `cur_frame`,
+> `cur_animation` and `behavior_insts` — none of which are in the main map.
+
+---
+
 The Construct 2 engine obfuscates all internal identifier names (classes, methods, properties) into short, meaningless symbols like `wa`, `S`, `Fs`, `H`, `W`, etc. This document maps every one of those obfuscated names back to their original, readable Construct 2 equivalents — so you can understand and interact with the game's runtime without needing the unobfuscated source.
 
 ---
@@ -38,6 +51,7 @@ This documentation exists so that **aspiring modders** can:
 |------|-------------|
 | `C2RUNTIME_OBFUSCATION_MAP_COMPLETE_ENG.txt` | Full obfuscation map — English |
 | `C2RUNTIME_OBFUSCATION_MAP_COMPLETE_RU.txt` | Full obfuscation map — Russian (Русский) |
+| `C2RUNTIME_2.3.3_ADDENDUM_ENG.txt` | **2.3.3 addendum** — what still holds, what shifted, and five identifiers the main map does not have |
 | `README.md` | This file |
 
 ---
